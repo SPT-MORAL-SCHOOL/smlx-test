@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPT MORAL | STUDENT MORALITY LEADERSHIP COMMITTEE</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        /* ========================================= */
+        /* 1. Global Styles and Utilities */
+        /* ========================================= */
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary-color: #2c3e50; /* Dark Blue */
+            --secondary-color: #3498db; /* Bright Blue */
+            --background-color: #f4f7f6; /* Light Grey/White */
+            --card-background: #ffffff;
+            --text-color: #333;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            --admin-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Utility Classes */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        /* Buttons and Inputs */
+        button, .btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-weight: 600;
+        }
+
+        button:hover, .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        button:disabled, .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        /* Admin/Danger Button */
+        .btn-danger {
+            background-color: var(--admin-color);
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Modal Style */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: var(--card-background);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--box-shadow);
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        /* ========================================= */
+        /* 2. Authentication Pages (Login/Register) */
+        /* ========================================= */
+        #auth-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0f2f1 0%, #bbdefb 100%);
+        }
+
+        .auth-form {
+            background-color: var(--card-background);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-form img {
+            width: 80px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-auth {
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        /* ========================================= */
+        /* 3. Dashboard Layout (Menu & Content) */
+        /* ========================================= */
+        #dashboard-page {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--card-background);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+        }
+
+        .logo-title {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-title img {
+            height: 40px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+
+        .menu-toggle {
+            display: none; /* Hidden on desktop */
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Desktop Menu */
+        .desktop-menu {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .desktop-menu a, .desktop-menu button {
+            text-decoration: none;
+            color: var(--primary-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            background: none;
+            border: none;
+            font-size: 1em;
+            font-weight: 500;
+        }
+
+        .desktop-menu a:hover, .desktop-menu button:hover, .desktop-menu .active {
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+        }
+
+        .dashboard-content {
+            display: flex;
+        }
+
+        /* Mobile Menu (Sidebar/Off-canvas) */
+        .mobile-sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 100;
+            top: 0;
+            left: 0;
+            background-color: var(--primary-color);
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-sidebar a, .mobile-sidebar button {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 1.1em;
+            color: white;
+            display: block;
+            transition: 0.3s;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+        }
+
+        .mobile-sidebar a:hover, .mobile-sidebar button:hover, .mobile-sidebar .active {
+            background-color: #34495e;
+        }
+
+        .close-sidebar-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+            color: white;
+        }
+
+        /* Main Content Area */
+        .main-content-area {
+            flex-grow: 1;
+            padding: 20px;
+            transition: margin-left .5s;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            margin-top: 40px;
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+        
+        /* ========================================= */
+        /* 4. Dashboard Components (Home) */
+        /* ========================================= */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .full-width-card {
+            grid-column: 1 / -1;
+        }
+
+        .list-group-item {
+            padding: 10px 0;
+            border-bottom: 1px dashed #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-available { background-color: #2ecc71; color: white; }
+        .status-borrowed { background-color: #f1c40f; color: var(--text-color); }
+        .status-upcoming { background-color: #3498db; color: white; }
+
+        /* ========================================= */
+        /* 5. Responsive Design */
+        /* ========================================= */
+        @media (max-width: 992px) {
+            .desktop-menu {
+                display: none; /* Hide desktop menu on mobile */
+            }
+            .menu-toggle {
+                display: block; /* Show hamburger icon on mobile */
+            }
+            .dashboard-content {
+                display: block; /* Stack on mobile */
+            }
+            .main-content-area {
+                padding: 10px;
+            }
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-page">
+        <div class="auth-form">
+            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="SPT Logo">
+            <h3>คณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม</h3>
+            <p id="auth-title">ลงชื่อเข้าใช้งาน</p>
+            <hr style="margin: 15px 0;">
+
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <select id="reg-prefix" required>
+                        <option value="">เลือกคำนำหน้า</option>
+                        <option value="เด็กชาย">เด็กชาย</option>
+                        <option value="เด็กหญิง">เด็กหญิง</option>
+                        <option value="นาย">นาย</option>
+                        <option value="นางสาว">นางสาว</option>
+                        <option value="นาง">นาง</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="reg-firstname" placeholder="ชื่อ" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="reg-lastname" placeholder="นามสกุล" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="reg-email" placeholder="อีเมล (เช่น name@spt.ac.th)" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="reg-password" placeholder="รหัสผ่าน (6 ตัวขึ้นไป)" required>
+                </div>
+                <button type="submit">ลงทะเบียนและส่งคำขออนุมัติ</button>
+            </form>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="อีเมล" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="รหัสผ่าน" required>
+                </div>
+                <button type="submit">เข้าสู่ระบบ</button>
+            </form>
+
+            <div class="toggle-auth">
+                <p id="toggle-link">ยังไม่มีบัญชี? <a href="#" onclick="toggleAuthMode()">ลงทะเบียน</a></p>
+            </div>
+            <p id="auth-message" style="color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <div id="dashboard-page">
+        <div class="header">
+            <div class="logo-title">
+                <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="Logo">
+                <span style="font-size: 1.2em; font-weight: 700;">SPT MORAL LEADER</span>
+            </div>
+            <div class="desktop-menu">
+                <a href="#" class="menu-item active" data-page="home">หน้าหลัก</a>
+                <a href="#" class="menu-item" data-page="activities">กิจกรรม</a>
+                <a href="#" class="menu-item" data-page="calendar">ปฏิทิน</a>
+                <a href="#" class="menu-item" data-page="links">ลิงก์</a>
+                <a href="#" class="menu-item" data-page="documents">เอกสาร</a>
+                <a href="#" class="menu-item" data-page="borrow-return">ยืม-คืนอุปกรณ์</a>
+                <a href="#" class="menu-item admin-only" data-page="admin" style="display: none; color: var(--admin-color);">จัดการระบบ</a>
+                <button onclick="openModal('passwordModal')">แก้ไขรหัสผ่าน</button>
+                <button onclick="logout()">ออกจากระบบ</button>
+            </div>
+            <span class="menu-toggle" onclick="openSidebar()">&#9776;</span>
+        </div>
+
+        <div id="mobile-sidebar" class="mobile-sidebar">
+            <a href="javascript:void(0)" class="close-sidebar-btn" onclick="closeSidebar()">&times;</a>
+            <a href="#" class="menu-item active" data-page="home" onclick="closeSidebar()">หน้าหลัก</a>
+            <a href="#" class="menu-item" data-page="activities" onclick="closeSidebar()">กิจกรรม</a>
+            <a href="#" class="menu-item" data-page="calendar" onclick="closeSidebar()">ปฏิทิน</a>
+            <a href="#" class="menu-item" data-page="links" onclick="closeSidebar()">ลิงก์</a>
+            <a href="#" class="menu-item" data-page="documents" onclick="closeSidebar()">เอกสาร</a>
+            <a href="#" class="menu-item" data-page="borrow-return" onclick="closeSidebar()">ยืม-คืนอุปกรณ์</a>
+            <a href="#" class="menu-item admin-only" data-page="admin" style="display: none; color: white; background-color: var(--admin-color);" onclick="closeSidebar()">จัดการระบบ</a>
+            <hr style="border-color: #34495e;">
+            <button onclick="openModal('passwordModal'); closeSidebar()">แก้ไขรหัสผ่าน</button>
+            <button onclick="logout()">ออกจากระบบ</button>
+        </div>
+
+        <div class="main-content-area">
+            <div class="container">
+                <section id="page-home" class="content-page">
+                    <h2>หน้าหลัก &mdash; ภาพรวมระบบ</h2>
+                    <div class="grid-container">
+                        <div class="card full-width-card">
+                            <h3>🗓️ กิจกรรมและปฏิทินที่จะมาถึง (5 รายการล่าสุด)</h3>
+                            <div id="upcoming-events-list">
+                                <div class="list-group-item">กิจกรรมอบรมคุณธรรม (25 ต.ค. 68) <span class="status-badge status-upcoming">กิจกรรม</span></div>
+                                <div class="list-group-item">ประชุมคณะกรรมการครั้งที่ 1/2568 (28 ต.ค. 68) <span class="status-badge status-upcoming">ประชุม</span></div>
+                                <div class="list-group-item">...</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>📊 สถานะอุปกรณ์</h3>
+                            <div id="device-status">
+                                <div class="list-group-item">ไมโครโฟน: 3/5 <span class="status-badge status-available">เหลือ 3</span></div>
+                                <div class="list-group-item">กล้องถ่ายภาพ: 0/1 <span class="status-badge status-borrowed">ถูกยืมหมด</span></div>
+                                <div class="list-group-item">...</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>🔗 ลิงก์ล่าสุด</h3>
+                            <div id="latest-links">
+                                <div class="list-group-item"><a href="#">คู่มือดำเนินงานปี 2568</a></div>
+                                <div class="list-group-item"><a href="#">แบบฟอร์มรายงาน</a></div>
+                                <div class="list-group-item">...</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>📄 เอกสารล่าสุด</h3>
+                            <div id="latest-documents">
+                                <div class="list-group-item"><a href="#">สรุปการประชุมครั้งที่ 1</a></div>
+                                <div class="list-group-item"><a href="#">แผนงานโครงการ</a></div>
+                                <div class="list-group-item">...</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <section id="page-activities" class="content-page" style="display: none;">
+                    <h2>📝 จัดการกิจกรรม</h2>
+                    <button class="btn" onclick="openModal('addActivityModal')">➕ เพิ่มกิจกรรม</button>
+                    <div id="activity-list" style="margin-top: 20px;">
+                        <div class="card">กิจกรรมที่ต้องรออนุมัติ: การปลูกป่าชายเลน (โดย ผู้ใช้งาน A) <button class="btn-danger" style="float: right;" onclick="approveActivity('id1')">อนุมัติ/ลบ</button></div>
+                        <div class="card">กิจกรรมที่ได้รับการอนุมัติ: ประชุมเตรียมงาน (วันที่ 1 พ.ย. 68)</div>
+                    </div>
+                </section>
+
+                <section id="page-links" class="content-page" style="display: none;">
+                    <h2>🔗 จัดการลิงก์สำคัญ</h2>
+                    <button class="btn" onclick="openModal('addLinkModal')">➕ เพิ่มลิงก์</button>
+                    <div id="link-list" style="margin-top: 20px;">
+                        </div>
+                </section>
+
+                <section id="page-documents" class="content-page" style="display: none;">
+                    <h2>📄 จัดการเอกสาร</h2>
+                    <button class="btn" onclick="openModal('addDocumentModal')">➕ เพิ่มเอกสาร</button>
+                    <div id="document-list" style="margin-top: 20px;">
+                        </div>
+                </section>
+
+                <section id="page-borrow-return" class="content-page" style="display: none;">
+                    <h2>🛠️ ระบบยืม-คืนอุปกรณ์</h2>
+                    <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
+                        <div class="card">
+                            <h3>อุปกรณ์คงเหลือ</h3>
+                            <div id="available-devices">
+                                <div class="list-group-item">ไมโครโฟน (เหลือ 3) <button style="float: right;" onclick="borrowDevice('mic')">ยืมอุปกรณ์</button></div>
+                                <div class="list-group-item">กล้องถ่ายภาพ (เหลือ 1) <button style="float: right;" onclick="borrowDevice('camera')">ยืมอุปกรณ์</button></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>อุปกรณ์ที่ยืมโดยฉัน</h3>
+                            <div id="my-borrowed-devices">
+                                <div class="list-group-item">ไมโครโฟน (ยืมเมื่อ 21/10) <button class="btn-danger" style="float: right;" onclick="returnDevice('mic-loan-id')">คืนอุปกรณ์</button></div>
+                                <div class="list-group-item">...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="page-calendar" class="content-page" style="display: none;">
+                    <h2>📅 จัดการปฏิทิน (กิจกรรม/ประชุม)</h2>
+                    <button class="btn" onclick="openModal('addCalendarEventModal')">➕ เพิ่มรายการปฏิทิน</button>
+                    <div id="calendar-view" class="card" style="margin-top: 20px;">
+                        ปฏิทินแสดงรายเดือน/รายสัปดาห์ (ใช้ไลบรารี FullCalendar เพิ่มเติมในภายหลัง)
+                    </div>
+                    <div id="calendar-event-list" style="margin-top: 20px;">
+                        </div>
+                </section>
+
+                <section id="page-admin" class="content-page admin-only" style="display: none;">
+                    <h2>⚙️ จัดการระบบ (ผู้ดูแลเท่านั้น)</h2>
+                    
+                    <div class="card">
+                        <h3>1. คำขออนุมัติ (แยกหมวดหมู่)</h3>
+                        <div style="font-weight: 600; margin-top: 10px;">คำขอลงทะเบียน:</div>
+                        <div id="approval-users">
+                             <div class="list-group-item">User C (email@mail.com) <button class="btn" style="float: right;" onclick="approveUser('uid_c')">อนุมัติ</button> <button class="btn-danger" style="float: right; margin-right: 5px;" onclick="rejectUser('uid_c')">ลบ</button></div>
+                        </div>
+                        <div style="font-weight: 600; margin-top: 10px;">คำขอกิจกรรม:</div>
+                        <div id="approval-activities">
+                             <div class="list-group-item">กิจกรรม A (โดย User B) <button class="btn" style="float: right;" onclick="approveItem('act_a')">อนุมัติ</button> <button class="btn-danger" style="float: right; margin-right: 5px;" onclick="deleteItem('act_a')">ลบ</button></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>2. จัดการอุปกรณ์</h3>
+                        <button class="btn" onclick="openModal('addDeviceModal')">➕ เพิ่มอุปกรณ์ใหม่</button>
+                        <div id="admin-devices-list" style="margin-top: 15px;">
+                            <div class="list-group-item">
+                                ไมโครโฟน (จำนวน 5, ยืม 2) <button class="btn-danger" style="float: right;" onclick="deleteDevice('mic_id')">ลบ</button>
+                                <button class="btn" style="float: right; margin-right: 5px;" onclick="forceReturn('mic_loan_id')">บังคับคืน</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>3. จัดการผู้ใช้งาน</h3>
+                        <div id="admin-users-list">
+                            <div class="list-group-item">
+                                นาย สมชาย ใจดี (user@spt.ac.th) 
+                                <button class="btn-danger" style="float: right;" onclick="deleteUser('user_id')">ลบบัญชี</button>
+                                <button class="btn" style="float: right; margin-right: 5px;" onclick="sendResetLink('user@spt.ac.th')">รีเซ็ตรหัสผ่าน</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="footer">
+                    &copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="addActivityModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addActivityModal')">&times;</span>
+            <h4>เพิ่มกิจกรรม / รายการปฏิทิน</h4>
+            <form id="activity-form">
+                <div class="form-group">
+                    <input type="text" placeholder="ชื่อกิจกรรม" id="act-name" required>
+                </div>
+                <div class="form-group" id="act-type-group" style="display:none;">
+                    <select id="act-type">
+                        <option value="กิจกรรม">กิจกรรม</option>
+                        <option value="ประชุม">ประชุม</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>วันที่เริ่มต้น:</label>
+                    <input type="date" id="act-start-date" required>
+                </div>
+                <div class="form-group">
+                    <label>เวลาเริ่มต้น:</label>
+                    <input type="time" id="act-start-time">
+                </div>
+                <div class="form-group">
+                    <label>วันที่สิ้นสุด:</label>
+                    <input type="date" id="act-end-date" required>
+                </div>
+                <div class="form-group">
+                    <label>เวลาสิ้นสุด:</label>
+                    <input type="time" id="act-end-time">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="act-all-day"> ตลอดทั้งวัน</label>
+                </div>
+                <div class="form-group">
+                    <textarea placeholder="รายละเอียด" id="act-details"></textarea>
+                </div>
+                <button type="submit">บันทึกและส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="addLinkModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addLinkModal')">&times;</span>
+            <h4>เพิ่มลิงก์</h4>
+            <form id="link-form">
+                <div class="form-group"><input type="text" placeholder="ชื่อลิงก์" id="link-name" required></div>
+                <div class="form-group"><input type="url" placeholder="URL ลิงก์ (http://...)" id="link-url" required></div>
+                <div class="form-group"><textarea placeholder="รายละเอียด" id="link-details"></textarea></div>
+                <button type="submit">บันทึกและส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addDocumentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addDocumentModal')">&times;</span>
+            <h4>เพิ่มเอกสาร</h4>
+            <form id="document-form">
+                <div class="form-group"><input type="text" placeholder="ชื่อเอกสาร" id="doc-name" required></div>
+                <div class="form-group"><input type="url" placeholder="URL เอกสาร/ลิงก์ Google Drive" id="doc-url" required></div>
+                <div class="form-group"><textarea placeholder="รายละเอียด" id="doc-details"></textarea></div>
+                <button type="submit">บันทึกและส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('passwordModal')">&times;</span>
+            <h4>แก้ไขรหัสผ่าน</h4>
+            <form id="change-password-form">
+                <div class="form-group"><input type="password" placeholder="รหัสผ่านเดิม" id="old-password" required></div>
+                <div class="form-group"><input type="password" placeholder="รหัสผ่านใหม่ (6 ตัวขึ้นไป)" id="new-password" required></div>
+                <div class="form-group"><input type="password" placeholder="ยืนยันรหัสผ่านใหม่" id="confirm-password" required></div>
+                <p id="password-message" style="color: red; margin-bottom: 10px;"></p>
+                <button type="submit">ยืนยันการแก้ไขรหัสผ่าน</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="addDeviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addDeviceModal')">&times;</span>
+            <h4>เพิ่มอุปกรณ์ใหม่</h4>
+            <form id="add-device-form">
+                <div class="form-group"><input type="text" placeholder="ชื่ออุปกรณ์ (เช่น ไมโครโฟน)" id="device-name" required></div>
+                <div class="form-group"><input type="number" placeholder="จำนวนเริ่มต้น" id="device-quantity" required min="1"></div>
+                <button type="submit">เพิ่มอุปกรณ์</button>
+            </form>
+        </div>
+    </div>
+
+
+<script>
+    // =========================================
+    // 6. Firebase Configuration and Initialization
+    // =========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw",
+        authDomain: "clip-61b0b.firebaseapp.com",
+        projectId: "clip-61b0b",
+        storageBucket: "clip-61b0b.firebasestorage.app",
+        messagingSenderId: "63156543329",
+        appId: "1:63156543329:web:9243a29ec5e3cf4225af20",
+        measurementId: "G-JCJVWHD6YK"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Define Admin Email for role-based access
+    const ADMIN_EMAIL = 'sptmorral@spt.ac.th';
+    let currentUser = null;
+    let isAdmin = false;
+
+    // =========================================
+    // 7. Core UI/UX Functions
+    // =========================================
+    
+    /**
+     * Toggles between Login and Register forms.
+     */
+    function toggleAuthMode() {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const title = document.getElementById('auth-title');
+        const toggleLink = document.getElementById('toggle-link');
+        const authMessage = document.getElementById('auth-message');
+        authMessage.textContent = ''; // Clear message
+
+        if (loginForm.style.display === 'none') {
+            // Switch to Login
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            title.textContent = 'ลงชื่อเข้าใช้งาน';
+            toggleLink.innerHTML = 'ยังไม่มีบัญชี? <a href="#" onclick="toggleAuthMode()">ลงทะเบียน</a>';
+        } else {
+            // Switch to Register
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            title.textContent = 'ลงทะเบียนสมาชิกใหม่';
+            toggleLink.innerHTML = 'มีบัญชีอยู่แล้ว? <a href="#" onclick="toggleAuthMode()">เข้าสู่ระบบ</a>';
+        }
+    }
+    
+    /**
+     * Shows a specific page section and hides others.
+     * @param {string} pageId - The ID of the page section to show (e.g., 'home', 'activities').
+     */
+    function showPage(pageId) {
+        document.querySelectorAll('.content-page').forEach(page => {
+            page.style.display = 'none';
+        });
+        document.getElementById(`page-${pageId}`).style.display = 'block';
+
+        // Update active menu item
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-page') === pageId) {
+                item.classList.add('active');
+            }
+        });
+        
+        // Custom logic for specific pages
+        if (pageId === 'activities' || pageId === 'calendar') {
+            // Logic to check and set activity type group visibility for the modal
+            const isCalendar = pageId === 'calendar';
+            document.getElementById('act-type-group').style.display = isCalendar ? 'block' : 'none';
+        }
+    }
+    
+    /**
+     * Opens the mobile sidebar menu.
+     */
+    function openSidebar() {
+        document.getElementById("mobile-sidebar").style.width = "250px";
+    }
+
+    /**
+     * Closes the mobile sidebar menu.
+     */
+    function closeSidebar() {
+        document.getElementById("mobile-sidebar").style.width = "0";
+    }
+
+    /**
+     * Opens a specific modal.
+     * @param {string} modalId - The ID of the modal to open.
+     */
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    /**
+     * Closes a specific modal.
+     * @param {string} modalId - The ID of the modal to close.
+     */
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Close modal if user clicks outside of it
+    window.onclick = function(event) {
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        });
+    }
+
+    // =========================================
+    // 8. Firebase Authentication Handlers
+    // =========================================
+
+    /**
+     * Checks user authentication state and updates UI.
+     */
+    auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
+        const authPage = document.getElementById('auth-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+        const authMessage = document.getElementById('auth-message');
+
+        if (user) {
+            // User is signed in
+            authPage.style.display = 'none';
+            dashboardPage.style.display = 'block';
+            
+            // Check Admin Role
+            isAdmin = user.email === ADMIN_EMAIL;
+
+            // Check if user is approved (fetch from Firestore)
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.data();
+            
+            if (!userData || userData.status === 'pending') {
+                // User is registered but not approved
+                if (!isAdmin) {
+                    authMessage.textContent = 'บัญชีของคุณกำลังรอการอนุมัติจากผู้ดูแล';
+                    authPage.style.display = 'flex';
+                    dashboardPage.style.display = 'none';
+                    auth.signOut(); // Log them out immediately
+                    return;
+                }
+            }
+
+            // Show/Hide Admin menu items
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = isAdmin ? 'block' : 'none';
+            });
+
+            showPage('home'); // Default page
+            loadDashboardData(); // Load initial data
+            
+        } else {
+            // User is signed out
+            authPage.style.display = 'flex';
+            dashboardPage.style.display = 'none';
+            authMessage.textContent = '';
+        }
+    });
+
+    /**
+     * Handles user registration.
+     */
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const prefix = document.getElementById('reg-prefix').value;
+        const firstName = document.getElementById('reg-firstname').value;
+        const lastName = document.getElementById('reg-lastname').value;
+        const authMessage = document.getElementById('auth-message');
+        authMessage.textContent = '';
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+
+            // Save user info to Firestore with 'pending' status
+            await db.collection('users').doc(user.uid).set({
+                prefix: prefix,
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                role: 'member',
+                status: 'pending', // Must be approved by admin
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            authMessage.style.color = 'green';
+            authMessage.textContent = 'ลงทะเบียนสำเร็จ! โปรดรอผู้ดูแลอนุมัติบัญชีของคุณ';
+            toggleAuthMode(); // Switch back to login view
+            auth.signOut(); // Ensure user is logged out after registration
+            
+        } catch (error) {
+            authMessage.style.color = 'red';
+            authMessage.textContent = `ข้อผิดพลาด: ${error.message}`;
+        }
+    });
+
+    /**
+     * Handles user login.
+     */
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const authMessage = document.getElementById('auth-message');
+        authMessage.textContent = '';
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            // Redirection/UI update handled by onAuthStateChanged
+            
+        } catch (error) {
+            authMessage.style.color = 'red';
+            authMessage.textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        }
+    });
+    
+    /**
+     * Logs the user out.
+     */
+    function logout() {
+        auth.signOut();
+    }
+    
+    /**
+     * Handles password change from modal.
+     */
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldPass = document.getElementById('old-password').value;
+        const newPass = document.getElementById('new-password').value;
+        const confirmPass = document.getElementById('confirm-password').value;
+        const message = document.getElementById('password-message');
+        message.textContent = '';
+
+        if (newPass !== confirmPass) {
+            message.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน';
+            return;
+        }
+
+        if (newPass.length < 6) {
+             message.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร';
+            return;
+        }
+
+        const user = auth.currentUser;
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+        
+        try {
+            await user.reauthenticateWithCredential(credential);
+            await user.updatePassword(newPass);
+            message.style.color = 'green';
+            message.textContent = 'แก้ไขรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบอีกครั้ง';
+            
+            setTimeout(() => {
+                closeModal('passwordModal');
+                logout();
+            }, 2000);
+            
+        } catch (error) {
+            message.style.color = 'red';
+            message.textContent = 'รหัสผ่านเดิมไม่ถูกต้อง หรือเกิดข้อผิดพลาด: ' + error.message;
+        }
+    });
+    
+    // =========================================
+    // 9. Data Loading and Display (Placeholders for Firestore)
+    // =========================================
+
+    /**
+     * Loads essential data for the dashboard home page.
+     * NOTE: This function needs full implementation with Firestore queries.
+     */
+    function loadDashboardData() {
+        console.log("Loading Dashboard Data...");
+        // 1. Fetch upcoming events (from 'activities' and 'calendar' collections, sorted by date)
+        // 2. Fetch device status (from 'devices' and 'borrowed' collections)
+        // 3. Fetch latest links (from 'links' collection, approved only)
+        // 4. Fetch latest documents (from 'documents' collection, approved only)
+        
+        // **Admin specific data loading (Admin Page)**
+        if (isAdmin) {
+             loadAdminPanelData();
+        }
+    }
+    
+    function loadAdminPanelData() {
+        console.log("Loading Admin Panel Data...");
+        // 1. Fetch all 'users' with status='pending'
+        // 2. Fetch all 'activities', 'links', 'documents', 'calendar' items with status='pending'
+        // 3. Fetch all 'devices' and 'borrowed' records
+        // 4. Update the inner HTML of #approval-users, #approval-activities, #admin-devices-list, #admin-users-list
+    }
+    
+    /**
+     * Event listener for menu clicks to switch pages
+     */
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = item.getAttribute('data-page');
+            showPage(page);
+        });
+    });
+
+    // =========================================
+    // 10. Forms and CRUD Handlers (Firestore Interaction)
+    // =========================================
+
+    /**
+     * Generic function to handle submission for items requiring admin approval
+     * @param {string} collection - Firestore collection name (activities, links, documents)
+     * @param {object} data - Data to save
+     */
+    async function submitForApproval(collection, data) {
+        if (!currentUser) return;
+
+        const itemData = {
+            ...data,
+            submittedBy: currentUser.email,
+            status: 'pending', // Requires Admin approval
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            await db.collection(collection).add(itemData);
+            alert('ส่งข้อมูลเพื่อขออนุมัติสำเร็จแล้ว!');
+        } catch (error) {
+            console.error("Error submitting item: ", error);
+            alert('เกิดข้อผิดพลาดในการส่งข้อมูล');
+        }
+    }
+
+    // 2.3 & 2.7 Activity/Calendar Form Submission
+    document.getElementById('activity-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const isCalendarPage = document.getElementById('page-calendar').style.display !== 'none';
+        const collection = isCalendarPage ? 'calendar' : 'activities';
+        
+        const activityData = {
+            name: document.getElementById('act-name').value,
+            type: isCalendarPage ? document.getElementById('act-type').value : 'กิจกรรม',
+            startDate: document.getElementById('act-start-date').value,
+            startTime: document.getElementById('act-start-time').value,
+            endDate: document.getElementById('act-end-date').value,
+            endTime: document.getElementById('act-end-time').value,
+            details: document.getElementById('act-details').value,
+            allDay: document.getElementById('act-all-day').checked
+        };
+        
+        submitForApproval(collection, activityData);
+        closeModal('addActivityModal');
+        e.target.reset();
+    });
+
+    // 2.4 Link Form Submission
+    document.getElementById('link-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const linkData = {
+            name: document.getElementById('link-name').value,
+            url: document.getElementById('link-url').value,
+            details: document.getElementById('link-details').value
+        };
+        submitForApproval('links', linkData);
+        closeModal('addLinkModal');
+        e.target.reset();
+    });
+
+    // 2.5 Document Form Submission
+    document.getElementById('document-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const docData = {
+            name: document.getElementById('doc-name').value,
+            url: document.getElementById('doc-url').value,
+            details: document.getElementById('doc-details').value
+        };
+        submitForApproval('documents', docData);
+        closeModal('addDocumentModal');
+        e.target.reset();
+    });
+    
+    // 2.6 Borrow Device (Placeholder)
+    function borrowDevice(deviceId) {
+        if (!currentUser) return alert('กรุณาเข้าสู่ระบบก่อน');
+        // Logic: Check availability in 'devices' collection -> Add record to 'borrowed' collection
+        alert(`Request to borrow ${deviceId} sent! (Needs Firebase implementation)`);
+    }
+
+    // 2.6 Return Device (Placeholder)
+    function returnDevice(loanId) {
+         // Logic: Delete record from 'borrowed' collection -> Update count in 'devices' collection
+        alert(`Return request for loan ${loanId} sent! (Needs Firebase implementation)`);
+    }
+
+    // 2.8 Admin Functions (Placeholders)
+    
+    // 2.8.1 User Approval
+    function approveUser(uid) {
+        if (!isAdmin) return;
+        // Logic: Update 'users' collection where docId=uid, set status='approved'
+        alert(`User ${uid} approved!`);
+    }
+    
+    function rejectUser(uid) {
+        if (!isAdmin) return;
+        // Logic: Delete 'users' doc with uid OR update status='rejected' and delete Firebase Auth user
+        alert(`User ${uid} rejected!`);
+    }
+    
+    // 2.8.1 Item Approval (Activities, Links, Docs, Calendar)
+    function approveItem(itemId) {
+        if (!isAdmin) return;
+        // Logic: Update item in the respective collection, set status='approved'
+        alert(`Item ${itemId} approved!`);
+    }
+
+    function deleteItem(itemId) {
+        if (!isAdmin) return;
+        // Logic: Delete item from the respective collection
+        alert(`Item ${itemId} deleted!`);
+    }
+
+    // 2.8.2 Add Device (Admin)
+    document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('device-name').value;
+        const quantity = parseInt(document.getElementById('device-quantity').value);
+
+        if (quantity < 1) {
+            alert('จำนวนต้องมากกว่า 0');
+            return;
+        }
+
+        try {
+            await db.collection('devices').add({
+                name: name,
+                total: quantity,
+                available: quantity,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert('เพิ่มอุปกรณ์สำเร็จ!');
+            closeModal('addDeviceModal');
+            e.target.reset();
+            loadAdminPanelData(); // Reload admin data
+        } catch (error) {
+            alert('เกิดข้อผิดพลาดในการเพิ่มอุปกรณ์');
+        }
+    });
+
+    // 2.8.2 Delete Device
+    function deleteDevice(deviceId) {
+        if (!isAdmin) return;
+        // Logic: Delete device from 'devices' collection
+        alert(`Device ${deviceId} deleted!`);
+    }
+    
+    // 2.8.2 Force Return Device
+    function forceReturn(loanId) {
+        if (!isAdmin) return;
+        // Logic: Same as returnDevice, but done by admin (update 'borrowed' and 'devices')
+        alert(`Force return of loan ${loanId} executed!`);
+    }
+
+    // 2.8.3 Send Reset Password Link
+    function sendResetLink(email) {
+        if (!isAdmin) return;
+        auth.sendPasswordResetEmail(email)
+            .then(() => alert(`ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง ${email} แล้ว`))
+            .catch(error => alert(`ข้อผิดพลาด: ${error.message}`));
+    }
+    
+    // 2.8.3 Delete User
+    function deleteUser(uid) {
+        if (!isAdmin) return;
+         // Logic: Delete 'users' doc with uid and delete Firebase Auth user
+        alert(`User ${uid} deleted! (Requires Firebase Admin SDK or careful client-side steps)`);
+    }
+    
+</script>
+
+</body>
+</html>
