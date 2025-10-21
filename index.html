@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม - โรงเรียนสตรีพัทลุง</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            box-sizing: border-box;
+            /* เปลี่ยนเป็น 'Sarabun' เพื่อใช้ฟอนต์ที่โหลดมา */
+            font-family: 'Sarabun', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .input-focus:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+        }
+        
+        .calendar-day {
+            /* aspect-ratio: 1; ลบออกเพื่อให้สามารถแสดงเนื้อหาได้มากขึ้น */
+            min-height: 100px; /* กำหนดความสูงขั้นต่ำ */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        .calendar-day:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .calendar-day.has-event {
+            /* ไม่ต้องกำหนดสีพื้นหลังที่นี่ เพื่อให้ใช้สีพื้นหลังของ event ใน grid */
+        }
+        
+        .mobile-menu {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+        
+        /* แก้ไขเพื่อรองรับการแสดงผลวันที่และกิจกรรม */
+        .calendar-grid .day-header {
+            text-align: center;
+            font-weight: 600;
+            color: #4b5563; /* gray-700 */
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb; /* border-gray-200 */
+        }
+        
+        .calendar-grid .calendar-day {
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .calendar-grid .calendar-day:nth-child(7n) {
+            border-right: none;
+        }
+        
+        .calendar-grid .calendar-day:nth-last-child(-n+7) {
+            border-bottom: none;
+        }
+        
+    </style>
+</head>
+<body class="min-h-full bg-gray-50">
+    <div id="authPage" class="min-h-full gradient-bg flex items-center justify-center p-4">
+        <div class="floating-animation absolute top-10 left-10 w-20 h-20 bg-white bg-opacity-20 rounded-full"></div>
+        <div class="floating-animation absolute bottom-20 right-20 w-16 h-16 bg-white bg-opacity-15 rounded-full" style="animation-delay: -2s;"></div>
+        <div class="floating-animation absolute top-1/3 right-10 w-12 h-12 bg-white bg-opacity-10 rounded-full" style="animation-delay: -4s;"></div>
+        
+        <div class="w-full max-w-md">
+            <div id="notificationArea" class="fixed top-4 right-4 z-[9999]"></div>
+            
+            <div id="loginForm" class="glass-effect rounded-3xl p-8 shadow-2xl slide-in">
+                <div class="text-center mb-8">
+                    <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="w-20 h-20 mx-auto mb-4 rounded-full shadow-lg">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">ระบบคณะกรรมการนักเรียน</h1>
+                    <p class="text-gray-600 text-sm">โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง</p>
+                </div>
+                
+                <form id="loginFormElement" class="space-y-6">
+                    <div>
+                        <label for="loginEmail" class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                        <input type="email" id="loginEmail" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="กรุณากรอกอีเมล">
+                    </div>
+                    
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                        <input type="password" id="loginPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="กรุณากรอกรหัสผ่าน">
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">
+                        เข้าสู่ระบบ
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">ยังไม่มีบัญชี? <button type="button" onclick="showRegister()" class="text-purple-600 hover:text-purple-800 font-medium">ลงทะเบียน</button></p>
+                </div>
+            </div>
+            
+            <div id="registerForm" class="glass-effect rounded-3xl p-8 shadow-2xl slide-in hidden">
+                <div class="text-center mb-8">
+                    <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="w-20 h-20 mx-auto mb-4 rounded-full shadow-lg">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">ลงทะเบียนเข้าใช้งาน</h1>
+                    <p class="text-gray-600 text-sm">กรุณากรอกข้อมูลให้ครบถ้วน</p>
+                </div>
+                
+                <form id="registerFormElement" class="space-y-4">
+                    <div>
+                        <label for="prefix" class="block text-sm font-medium text-gray-700 mb-2">คำนำหน้าชื่อ</label>
+                        <select id="prefix" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200">
+                            <option value="">เลือกคำนำหน้า</option>
+                            <option value="เด็กชาย">เด็กชาย</option>
+                            <option value="เด็กหญิง">เด็กหญิง</option>
+                            <option value="นาย">นาย</option>
+                            <option value="นางสาว">นางสาว</option>
+                            <option value="นาง">นาง</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
+                            <input type="text" id="firstName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="ชื่อ">
+                        </div>
+                        <div>
+                            <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">นามสกุล</label>
+                            <input type="text" id="lastName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="นามสกุล">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="registerEmail" class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                        <input type="email" id="registerEmail" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="กรุณากรอกอีเมล">
+                    </div>
+                    
+                    <div>
+                        <label for="registerPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                        <input type="password" id="registerPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus transition-all duration-200" placeholder="กรุณากรอกรหัสผ่าน">
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">
+                        ลงทะเบียน
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">มีบัญชีแล้ว? <button type="button" onclick="showLogin()" class="text-purple-600 hover:text-purple-800 font-medium">เข้าสู่ระบบ</button></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden min-h-full">
+        <nav class="sticky-nav border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="w-10 h-10 rounded-full mr-3">
+                        <div class="hidden md:block">
+                            <h1 class="text-lg font-bold text-gray-800">คณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม</h1>
+                            <p class="text-xs text-gray-600">โรงเรียนสตรีพัทลุง</p>
+                        </div>
+                        <div class="md:hidden">
+                            <h1 class="text-sm font-bold text-gray-800">คณะกรรมการนักเรียน</h1>
+                        </div>
+                    </div>
+
+                    <div class="hidden md:flex items-center space-x-6">
+                        <button id="nav-dashboard" onclick="showPage('dashboard')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">หน้าหลัก</button>
+                        <button id="nav-activities" onclick="showPage('activities')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">กิจกรรม</button>
+                        <button id="nav-links" onclick="showPage('links')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">ลิงก์</button>
+                        <button id="nav-documents" onclick="showPage('documents')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">เอกสาร</button>
+                        <button id="nav-equipment" onclick="showPage('equipment')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">ยืม-คืนอุปกรณ์</button>
+                        <button id="nav-calendar" onclick="showPage('calendar')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">ปฏิทิน</button>
+                        <div id="adminMenu" class="hidden">
+                            <button id="nav-admin" onclick="showPage('admin')" class="nav-link text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">จัดการระบบ</button>
+                        </div>
+                        
+                        <div class="relative">
+                            <button onclick="toggleUserMenu()" class="flex items-center text-gray-700 hover:text-purple-600 px-3 py-2 rounded-lg transition-colors duration-200">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                <span id="userDisplayName">ผู้ใช้งาน</span>
+                                <i class="fas fa-chevron-down ml-2"></i>
+                            </button>
+                            <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                                <button onclick="showChangePassword()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50">แก้ไขรหัสผ่าน</button>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50">ออกจากระบบ</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:hidden">
+                        <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-purple-600 p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mobileMenu" class="mobile-menu fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 md:hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="w-8 h-8 rounded-full mr-2">
+                            <span class="font-bold text-gray-800">เมนู</span>
+                        </div>
+                        <button onclick="toggleMobileMenu()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="py-4">
+                    <button onclick="showPage('dashboard'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">หน้าหลัก</button>
+                    <button onclick="showPage('activities'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">กิจกรรม</button>
+                    <button onclick="showPage('links'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">ลิงก์</button>
+                    <button onclick="showPage('documents'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">เอกสาร</button>
+                    <button onclick="showPage('equipment'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">ยืม-คืนอุปกรณ์</button>
+                    <button onclick="showPage('calendar'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">ปฏิทิน</button>
+                    <div id="adminMenuMobile" class="hidden">
+                        <button onclick="showPage('admin'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">จัดการระบบ</button>
+                    </div>
+                    <hr class="my-4">
+                    <button onclick="showChangePassword(); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">แก้ไขรหัสผ่าน</button>
+                    <button onclick="logout(); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50">ออกจากระบบ</button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div id="dashboardPage" class="page-content">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">หน้าหลัก</h2>
+                    <p class="text-gray-600">ภาพรวมของระบบคณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">ปฏิทินกิจกรรมเดือนปัจจุบัน</h3>
+                            <div id="dashboardCalendar" class="calendar-grid bg-gray-50 rounded-xl p-4">
+                                </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">สถานะอุปกรณ์</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">อุปกรณ์ทั้งหมด</span>
+                                    <span class="font-bold text-blue-600" id="totalEquipment">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">ว่าง</span>
+                                    <span class="font-bold text-green-600" id="availableEquipment">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">ถูกยืม</span>
+                                    <span class="font-bold text-orange-600" id="borrowedEquipment">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">ลิงก์ล่าสุด</h3>
+                            <div id="latestLinks" class="space-y-2">
+                                </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">เอกสารล่าสุด</h3>
+                            <div id="latestDocuments" class="space-y-2">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">กิจกรรมและปฏิทินที่จะมาถึง</h3>
+                        <div id="upcomingEvents" class="space-y-4">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="activitiesPage" class="page-content hidden">
+                <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">กิจกรรม</h2>
+                        <p class="text-gray-600">จัดการกิจกรรมต่างๆ ของคณะกรรมการนักเรียน</p>
+                    </div>
+                    <button onclick="showAddActivityModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-medium">
+                        <i class="fas fa-plus mr-2"></i>เพิ่มกิจกรรม
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div id="activitiesList" class="space-y-4">
+                        </div>
+                </div>
+            </div>
+
+            <div id="linksPage" class="page-content hidden">
+                <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">ลิงก์</h2>
+                        <p class="text-gray-600">จัดการลิงก์ที่เป็นประโยชน์</p>
+                    </div>
+                    <button onclick="showAddLinkModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-medium">
+                        <i class="fas fa-plus mr-2"></i>เพิ่มลิงก์
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div id="linksList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+            </div>
+
+            <div id="documentsPage" class="page-content hidden">
+                <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">เอกสาร</h2>
+                        <p class="text-gray-600">จัดการเอกสารสำคัญ</p>
+                    </div>
+                    <button onclick="showAddDocumentModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-medium">
+                        <i class="fas fa-plus mr-2"></i>เพิ่มเอกสาร
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div id="documentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+            </div>
+
+            <div id="equipmentPage" class="page-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">ยืม-คืนอุปกรณ์</h2>
+                    <p class="text-gray-600">จัดการการยืมและคืนอุปกรณ์</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">อุปกรณ์คงเหลือ</h3>
+                        <div id="availableEquipmentList" class="space-y-4">
+                            </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">อุปกรณ์ที่ยืม</h3>
+                        <div id="borrowedEquipmentList" class="space-y-4">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendarPage" class="page-content hidden">
+                <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">ปฏิทิน</h2>
+                        <p class="text-gray-600">จัดการปฏิทินกิจกรรมและการประชุม</p>
+                    </div>
+                    <button onclick="showAddCalendarEventModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-medium">
+                        <i class="fas fa-plus mr-2"></i>เพิ่มกิจกรรม
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="previousMonth()" class="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="currentMonth" class="text-xl font-bold text-gray-800"></h3>
+                            <button onclick="nextMonth()" class="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <button onclick="goToToday()" class="text-purple-600 hover:text-purple-800 font-medium">วันนี้</button>
+                    </div>
+                    
+                    <div id="fullCalendar" class="calendar-grid bg-gray-50 rounded-xl">
+                        </div>
+                </div>
+            </div>
+
+            <div id="adminPage" class="page-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">จัดการระบบ</h2>
+                    <p class="text-gray-600">สำหรับผู้ดูแลระบบเท่านั้น</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">คำขอการอนุมัติ</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">กิจกรรม</h4>
+                                <div id="pendingActivities" class="space-y-2">
+                                    </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">ลิงก์</h4>
+                                <div id="pendingLinks" class="space-y-2">
+                                    </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">เอกสาร</h4>
+                                <div id="pendingDocuments" class="space-y-2">
+                                    </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">ปฏิทิน</h4>
+                                <div id="pendingCalendarEvents" class="space-y-2">
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">จัดการอุปกรณ์</h3>
+                            <button onclick="showAddEquipmentModal()" class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-plus mr-1"></i>เพิ่มอุปกรณ์
+                            </button>
+                        </div>
+                        <div id="equipmentManagement" class="space-y-4">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">จัดการผู้ใช้งาน</h3>
+                    <div id="userManagement" class="space-y-4">
+                        </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-gray-800 text-white py-8 mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p>&copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved</p>
+            </div>
+        </footer>
+    </div>
+
+    <div id="addActivityModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">เพิ่มกิจกรรม</h3>
+                <button type="button" onclick="closeModal('addActivityModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addActivityForm" class="space-y-4">
+                <div>
+                    <label for="activityName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อกิจกรรม</label>
+                    <input type="text" id="activityName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="activityStartDate" class="block text-sm font-medium text-gray-700 mb-2">วันที่เริ่ม</label>
+                        <input type="date" id="activityStartDate" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                    <div>
+                        <label for="activityStartTime" class="block text-sm font-medium text-gray-700 mb-2">เวลาที่เริ่ม</label>
+                        <input type="time" id="activityStartTime" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="activityEndDate" class="block text-sm font-medium text-gray-700 mb-2">วันที่สิ้นสุด</label>
+                        <input type="date" id="activityEndDate" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                    <div>
+                        <label for="activityEndTime" class="block text-sm font-medium text-gray-700 mb-2">เวลาที่สิ้นสุด</label>
+                        <input type="time" id="activityEndTime" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="activityAllDay" class="mr-2">
+                        <span class="text-sm text-gray-700">ตลอดทั้งวัน</span>
+                    </label>
+                </div>
+                <div>
+                    <label for="activityDescription" class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
+                    <textarea id="activityDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus"></textarea>
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เพิ่มกิจกรรม</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addLinkModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">เพิ่มลิงก์</h3>
+                <button type="button" onclick="closeModal('addLinkModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addLinkForm" class="space-y-4">
+                <div>
+                    <label for="linkName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อลิงก์</label>
+                    <input type="text" id="linkName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="linkUrl" class="block text-sm font-medium text-gray-700 mb-2">ลิงก์</label>
+                    <input type="url" id="linkUrl" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus" placeholder="https://example.com">
+                </div>
+                <div>
+                    <label for="linkDescription" class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
+                    <textarea id="linkDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus"></textarea>
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เพิ่มลิงก์</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addDocumentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">เพิ่มเอกสาร</h3>
+                <button type="button" onclick="closeModal('addDocumentModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addDocumentForm" class="space-y-4">
+                <div>
+                    <label for="documentName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อเอกสาร</label>
+                    <input type="text" id="documentName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="documentUrl" class="block text-sm font-medium text-gray-700 mb-2">ลิงก์เอกสาร</label>
+                    <input type="url" id="documentUrl" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus" placeholder="https://example.com/document.pdf">
+                </div>
+                <div>
+                    <label for="documentDescription" class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
+                    <textarea id="documentDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus"></textarea>
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เพิ่มเอกสาร</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addCalendarEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">เพิ่มกิจกรรมปฏิทิน</h3>
+                <button type="button" onclick="closeModal('addCalendarEventModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addCalendarEventForm" class="space-y-4">
+                <div>
+                    <label for="calendarEventName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อกิจกรรม</label>
+                    <input type="text" id="calendarEventName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="calendarEventType" class="block text-sm font-medium text-gray-700 mb-2">ประเภท</label>
+                    <select id="calendarEventType" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                        <option value="">เลือกประเภท</option>
+                        <option value="กิจกรรม">กิจกรรม</option>
+                        <option value="ประชุม">ประชุม</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="calendarEventStartDate" class="block text-sm font-medium text-gray-700 mb-2">วันที่เริ่ม</label>
+                        <input type="date" id="calendarEventStartDate" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                    <div>
+                        <label for="calendarEventStartTime" class="block text-sm font-medium text-gray-700 mb-2">เวลาที่เริ่ม</label>
+                        <input type="time" id="calendarEventStartTime" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="calendarEventEndDate" class="block text-sm font-medium text-gray-700 mb-2">วันที่สิ้นสุด</label>
+                        <input type="date" id="calendarEventEndDate" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                    <div>
+                        <label for="calendarEventEndTime" class="block text-sm font-medium text-gray-700 mb-2">เวลาที่สิ้นสุด</label>
+                        <input type="time" id="calendarEventEndTime" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="calendarEventAllDay" class="mr-2">
+                        <span class="text-sm text-gray-700">ตลอดทั้งวัน</span>
+                    </label>
+                </div>
+                <div>
+                    <label for="calendarEventDescription" class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
+                    <textarea id="calendarEventDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus"></textarea>
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เพิ่มกิจกรรม</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">เพิ่มอุปกรณ์</h3>
+                <button type="button" onclick="closeModal('addEquipmentModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addEquipmentForm" class="space-y-4">
+                <div>
+                    <label for="equipmentName" class="block text-sm font-medium text-gray-700 mb-2">ชื่ออุปกรณ์</label>
+                    <input type="text" id="equipmentName" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="equipmentQuantity" class="block text-sm font-medium text-gray-700 mb-2">จำนวน</label>
+                    <input type="number" id="equipmentQuantity" required min="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="equipmentDescription" class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
+                    <textarea id="equipmentDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus"></textarea>
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เพิ่มอุปกรณ์</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">แก้ไขรหัสผ่าน</h3>
+                <button type="button" onclick="closeModal('changePasswordModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="changePasswordForm" class="space-y-4">
+                <div>
+                    <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านปัจจุบัน</label>
+                    <input type="password" id="currentPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านใหม่</label>
+                    <input type="password" id="newPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none input-focus">
+                </div>
+                <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-medium">เปลี่ยนรหัสผ่าน</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw",
+            authDomain: "clip-61b0b.firebaseapp.com",
+            projectId: "clip-61b0b",
+            storageBucket: "clip-61b0b.firebasestorage.app",
+            messagingSenderId: "63156543329",
+            appId: "1:63156543329:web:9243a29ec5e3cf4225af20",
+            measurementId: "G-JCJVWHD6YK"
+        };
+        
+        // **🚨 สำคัญ: สำหรับการใช้งานจริง คุณต้องแทนที่ด้วยค่า Firebase ของคุณเอง**
+        const ADMIN_EMAIL = 'sptmorral@spt.ac.th';
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentUser = null;
+        let currentPage = 'dashboard';
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        
+        // Mock/In-Memory Data Store (สำหรับ DEMO)
+        // **ในการนำไปใช้จริง ฟังก์ชัน CRUD ทั้งหมดควรถูกเปลี่ยนไปใช้ Firebase/Firestore แทนการอัปเดต sampleData โดยตรง**
+        let sampleData = {
+            activities: [
+                {
+                    id: 'act1',
+                    name: 'ประชุมคณะกรรมการนักเรียน',
+                    startDate: '2025-10-22', // ใช้ปีปัจจุบัน
+                    startTime: '13:00',
+                    endDate: '2025-10-22',
+                    endTime: '15:00',
+                    description: 'ประชุมวางแผนกิจกรรมประจำเดือน',
+                    allDay: false,
+                    approved: true,
+                    createdBy: ADMIN_EMAIL,
+                    type: 'ประชุม'
+                },
+                {
+                    id: 'act2',
+                    name: 'เตรียมงานโรงเรียนคุณธรรม',
+                    startDate: '2025-10-25', // ใช้ปีปัจจุบัน
+                    startTime: '',
+                    endDate: '2025-10-25',
+                    endTime: '',
+                    description: 'เตรียมสถานที่และเอกสาร',
+                    allDay: true,
+                    approved: true,
+                    createdBy: ADMIN_EMAIL,
+                    type: 'กิจกรรม'
+                }
+            ],
+            links: [
+                {
+                    id: 'link1',
+                    name: 'เว็บไซต์โรงเรียน',
+                    url: 'https://www.spt.ac.th',
+                    description: 'เว็บไซต์หลักของโรงเรียนสตรีพัทลุง',
+                    approved: true,
+                    createdBy: ADMIN_EMAIL,
+                    createdAt: new Date('2025-01-01')
+                }
+            ],
+            documents: [
+                {
+                    id: 'doc1',
+                    name: 'ระเบียบคณะกรรมการนักเรียน',
+                    url: 'https://example.com/document.pdf',
+                    description: 'ระเบียบและข้อบังคับของคณะกรรมการนักกรรมการนักเรียน',
+                    approved: true,
+                    createdBy: ADMIN_EMAIL,
+                    createdAt: new Date('2025-01-01')
+                }
+            ],
+            equipment: [
+                {
+                    id: 'eq1',
+                    name: 'ไมโครโฟนไร้สาย',
+                    total: 5,
+                    available: 3,
+                    borrowed: 2,
+                    description: 'ไมโครโฟนสำหรับกิจกรรม'
+                },
+                {
+                    id: 'eq2',
+                    name: 'ลำโพงพกพา JBL',
+                    total: 3,
+                    available: 2,
+                    borrowed: 1,
+                    description: 'ลำโพงสำหรับเปิดเพลงและประกาศ'
+                }
+            ],
+            calendarEvents: [
+                {
+                    id: 'cal1',
+                    name: 'วันหยุดราชการ',
+                    type: 'กิจกรรม',
+                    startDate: '2025-10-23', // ใช้ปีปัจจุบัน
+                    startTime: '',
+                    endDate: '2025-10-23',
+                    endTime: '',
+                    description: 'วันปิยมหาราช',
+                    allDay: true,
+                    approved: true,
+                    createdBy: ADMIN_EMAIL
+                }
+            ],
+            borrowedEquipment: [
+                {
+                    id: 'borrow1',
+                    equipmentId: 'eq1',
+                    name: 'ไมโครโฟนไร้สาย',
+                    borrowedBy: ADMIN_EMAIL,
+                    borrowedDate: new Date('2025-10-20').toISOString().split('T')[0]
+                }
+            ],
+            // User data for admin initialization/demo purpose
+            users: [ 
+                {
+                    uid: 'mockAdminUID', // This will be replaced by actual UID from Firebase
+                    email: ADMIN_EMAIL,
+                    prefix: 'นาย',
+                    firstName: 'ผู้ดูแล',
+                    lastName: 'ระบบ',
+                    role: 'admin',
+                    approved: true
+                }
+            ]
+        };
+        
+        // Utility for handling data (to mock Firestore calls)
+        const updateDataAndRefresh = (type) => {
+            // ในการใช้งานจริง, นี่คือจุดที่คุณจะส่งข้อมูลไปอัปเดต Firebase
+            console.log(`Data for ${type} updated (in-memory).`);
+            
+            // Re-render the necessary components
+            switch(type) {
+                case 'activities':
+                    loadActivities();
+                    loadDashboardCalendar();
+                    loadUpcomingEvents();
+                    break;
+                case 'links':
+                    loadLinks();
+                    loadLatestLinks();
+                    break;
+                case 'documents':
+                    loadDocuments();
+                    loadLatestDocuments();
+                    break;
+                case 'equipment':
+                    loadEquipment();
+                    loadEquipmentStats();
+                    loadEquipmentManagement();
+                    break;
+                case 'calendarEvents':
+                    loadCalendar();
+                    loadDashboardCalendar();
+                    loadUpcomingEvents();
+                    break;
+                case 'approvals':
+                    loadAdmin();
+                    loadActivities();
+                    loadLinks();
+                    loadDocuments();
+                    loadCalendar();
+                    break;
+                case 'users':
+                    loadUserManagement();
+                    break;
+            }
+        };
+
+
+        // Firebase Auth State Observer
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // User is signed in
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    
+                    // Assign temporary admin role if it's the admin email and not set
+                    if (user.email === ADMIN_EMAIL && !userData.role) {
+                         userData.role = 'admin';
+                         userData.approved = true;
+                    }
+                    
+                    if (userData.approved) {
+                        currentUser = {
+                            uid: user.uid,
+                            email: user.email,
+                            role: userData.role || 'user',
+                            displayName: `${userData.prefix || ''}${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+                            ...userData
+                        };
+                        
+                        document.getElementById('authPage').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+                        document.getElementById('userDisplayName').textContent = currentUser.displayName;
+                        
+                        if (currentUser.role === 'admin') {
+                            document.getElementById('adminMenu').classList.remove('hidden');
+                            document.getElementById('adminMenuMobile').classList.remove('hidden');
+                        } else {
+                             document.getElementById('adminMenu').classList.add('hidden');
+                            document.getElementById('adminMenuMobile').classList.add('hidden');
+                        }
+                        
+                        // Load the default page content
+                        showPage(currentPage);
+                        
+                    } else {
+                        showNotification('บัญชีของคุณยังไม่ได้รับการอนุมัติ กรุณารอผู้ดูแลอนุมัติ', 'error');
+                        await auth.signOut();
+                    }
+                } else {
+                    // This happens if the user is created via auth but data isn't in firestore (unlikely with register logic)
+                    showNotification('ไม่พบข้อมูลผู้ใช้ในฐานข้อมูล', 'error');
+                    await auth.signOut();
+                }
+            } else {
+                // User is signed out
+                currentUser = null;
+                document.getElementById('authPage').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('adminMenu').classList.add('hidden');
+                document.getElementById('adminMenuMobile').classList.add('hidden');
+                
+                // Ensure the login form is shown
+                showLogin();
+            }
+        });
+
+        // Authentication functions
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationArea');
+            const notification = document.createElement('div');
+            
+            notification.className = `p-4 rounded-xl shadow-lg mt-2 max-w-sm transition-all duration-300 transform slide-in-top ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            // Add custom animation style for sliding from top
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes slide-in-top { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }`;
+            document.head.appendChild(style);
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('slide-in-top');
+                notification.classList.add('opacity-0', 'scale-90');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Login form handler
+        document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // Notification handled by onAuthStateChanged
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        errorMessage = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'บัญชีนี้ถูกปิดใช้งาน';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        });
+
+        // Register form handler
+        document.getElementById('registerFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const prefix = document.getElementById('prefix').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            try {
+                // Check if admin email is already in use
+                if (email === ADMIN_EMAIL && sampleData.users.some(u => u.email === ADMIN_EMAIL && u.approved)) {
+                    showNotification('อีเมลผู้ดูแลระบบถูกใช้งานและอนุมัติแล้ว', 'error');
+                    return;
+                }
+                
+                // Create user account
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                const is_admin = email === ADMIN_EMAIL;
+                const is_approved = is_admin; // Auto-approve admin
+
+                // Save user data to Firestore
+                await db.collection('users').doc(user.uid).set({
+                    email: email,
+                    prefix: prefix,
+                    firstName: firstName,
+                    lastName: lastName,
+                    role: is_admin ? 'admin' : 'user',
+                    approved: is_approved,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Mock: Add to in-memory user list (for demo/admin check)
+                sampleData.users.push({
+                     uid: user.uid,
+                     email: email,
+                     prefix: prefix,
+                     firstName: firstName,
+                     lastName: lastName,
+                     role: is_admin ? 'admin' : 'user',
+                     approved: is_approved
+                });
+
+                // Sign out immediately after registration (unless it's the admin)
+                if (!is_admin) {
+                    await auth.signOut();
+                    showNotification('ลงทะเบียนสำเร็จ กรุณารอผู้ดูแลอนุมัติ', 'success');
+                    showLogin();
+                } else {
+                    showNotification('ลงทะเบียนผู้ดูแลสำเร็จ', 'success');
+                }
+
+                this.reset();
+            } catch (error) {
+                console.error('Registration error:', error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการลงทะเบียน';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        });
+
+        // Navigation functions
+        function showPage(pageName) {
+            // Hide all pages and deactivate all nav links
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-purple-600', 'font-bold');
+                link.classList.add('text-gray-700');
+            });
+            
+            // Show selected page and activate nav link
+            const pageElement = document.getElementById(pageName + 'Page');
+            const navLink = document.getElementById('nav-' + pageName);
+            
+            if (pageElement) {
+                pageElement.classList.remove('hidden');
+                currentPage = pageName;
+            }
+            if (navLink) {
+                navLink.classList.remove('text-gray-700');
+                navLink.classList.add('text-purple-600', 'font-bold');
+            }
+            
+            // Load page content
+            switch(pageName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'activities':
+                    loadActivities();
+                    break;
+                case 'links':
+                    loadLinks();
+                    break;
+                case 'documents':
+                    loadDocuments();
+                    break;
+                case 'equipment':
+                    loadEquipment();
+                    break;
+                case 'calendar':
+                    loadCalendar();
+                    break;
+                case 'admin':
+                    if (currentUser && currentUser.role === 'admin') {
+                        loadAdmin();
+                    } else {
+                        // Redirect if user is not admin
+                        showNotification('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error');
+                        showPage('dashboard');
+                    }
+                    break;
+            }
+        }
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('open');
+        }
+
+        async function logout() {
+            try {
+                // Close any open dropdowns/menus
+                toggleUserMenu(); 
+                toggleMobileMenu();
+                
+                await auth.signOut();
+                showNotification('ออกจากระบบสำเร็จ', 'success');
+            } catch (error) {
+                console.error('Logout error:', error);
+                showNotification('เกิดข้อผิดพลาดในการออกจากระบบ', 'error');
+            }
+        }
+
+        // Dashboard functions
+        async function loadDashboard() {
+            // No need for await with in-memory data, but keep for future Firebase implementation
+            loadDashboardCalendar();
+            loadEquipmentStats();
+            loadLatestLinks();
+            loadLatestDocuments();
+            loadUpcomingEvents();
+        }
+
+        function loadDashboardCalendar() {
+            const calendar = document.getElementById('dashboardCalendar');
+            const today = new Date();
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startDayOfWeek = firstDay.getDay(); // 0 for Sunday, 6 for Saturday
+            
+            // Calculate the start date of the calendar grid
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - startDayOfWeek);
+
+            let calendarHTML = '';
+            const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            
+            // Add day headers
+            dayNames.forEach(day => {
+                calendarHTML += `<div class="day-header">${day.substring(0, 2)}</div>`;
+            });
+
+            // Add calendar days
+            for (let i = 0; i < 42; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                
+                const isCurrentMonth = date.getMonth() === currentMonth;
+                const isToday = date.toDateString() === today.toDateString();
+                const events = getEventsForDate(date);
+                const hasEvent = events.length > 0;
+                
+                calendarHTML += `
+                    <div class="calendar-day min-h-[80px] p-2 border-b border-r ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'} ${isToday ? 'bg-purple-100' : ''} ${hasEvent ? 'has-event' : ''}">
+                        <div class="font-medium text-right ${isCurrentMonth ? 'text-gray-800' : 'text-gray-400'} ${isToday ? 'text-purple-700' : ''} mb-1 text-sm">
+                            ${date.getDate()}
+                        </div>
+                        <div class="space-y-1">
+                            ${events.map(event => `
+                                <div class="text-xs p-1 rounded overflow-hidden whitespace-nowrap text-ellipsis ${event.type === 'ประชุม' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}">
+                                    ${event.name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            calendar.innerHTML = calendarHTML;
+        }
+
+        function loadEquipmentStats() {
+            const totalEquipment = sampleData.equipment.reduce((sum, item) => sum + item.total, 0);
+            const availableEquipment = sampleData.equipment.reduce((sum, item) => sum + item.available, 0);
+            const borrowedEquipment = sampleData.equipment.reduce((sum, item) => sum + item.borrowed, 0);
+
+            document.getElementById('totalEquipment').textContent = totalEquipment;
+            document.getElementById('availableEquipment').textContent = availableEquipment;
+            document.getElementById('borrowedEquipment').textContent = borrowedEquipment;
+        }
+
+        function loadLatestLinks() {
+            const container = document.getElementById('latestLinks');
+            const latestLinks = sampleData.links
+                .filter(link => link.approved)
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                .slice(0, 3);
+
+            if (latestLinks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">ยังไม่มีลิงก์</p>';
+                return;
+            }
+
+            container.innerHTML = latestLinks.map(link => `
+                <div class="flex items-center justify-between">
+                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="text-purple-600 hover:text-purple-800 text-sm truncate">${link.name}</a>
+                    <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
+                </div>
+            `).join('');
+        }
+
+        function loadLatestDocuments() {
+            const container = document.getElementById('latestDocuments');
+            const latestDocuments = sampleData.documents
+                .filter(doc => doc.approved)
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                .slice(0, 3);
+
+            if (latestDocuments.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">ยังไม่มีเอกสาร</p>';
+                return;
+            }
+
+            container.innerHTML = latestDocuments.map(doc => `
+                <div class="flex items-center justify-between">
+                    <a href="${doc.url}" target="_blank" rel="noopener noreferrer" class="text-purple-600 hover:text-purple-800 text-sm truncate">${doc.name}</a>
+                    <i class="fas fa-file-alt text-gray-400 text-xs"></i>
+                </div>
+            `).join('');
+        }
+
+        function loadUpcomingEvents() {
+            const container = document.getElementById('upcomingEvents');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
+            
+            const upcomingEvents = [...sampleData.activities, ...sampleData.calendarEvents]
+                .filter(event => event.approved && new Date(event.endDate) >= today)
+                .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+                .slice(0, 5);
+
+            if (upcomingEvents.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">ไม่มีกิจกรรมที่จะมาถึง</p>';
+                return;
+            }
+
+            container.innerHTML = upcomingEvents.map(event => `
+                <div class="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
+                    <div>
+                        <h4 class="font-medium text-gray-800">${event.name}</h4>
+                        <p class="text-sm text-gray-600">
+                            ${formatDate(event.startDate)} 
+                            ${event.startTime ? `เวลา ${event.startTime}` : ''}
+                            ${(event.startDate !== event.endDate) ? ` ถึง ${formatDate(event.endDate)}` : ''}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">${event.description.substring(0, 50)}${event.description.length > 50 ? '...' : ''}</p>
+                    </div>
+                    <div class="flex-shrink-0 text-xs px-2 py-1 rounded-full ${event.type === 'ประชุม' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                        ${event.type || 'กิจกรรม'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Activities functions
+        function loadActivities() {
+            const container = document.getElementById('activitiesList');
+            // Show only approved activities for regular users
+            const activities = currentUser && currentUser.role === 'admin' 
+                ? sampleData.activities.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+                : sampleData.activities.filter(activity => activity.approved).sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+            if (activities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">ยังไม่มีกิจกรรม</p>';
+                return;
+            }
+
+            container.innerHTML = activities.map(activity => `
+                <div class="bg-gray-50 rounded-xl p-6 ${!activity.approved ? 'border-2 border-yellow-400' : ''}">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            ${activity.name} 
+                            ${!activity.approved ? '<span class="text-sm px-2 py-1 bg-yellow-400 text-white rounded-full ml-2">รออนุมัติ</span>' : ''}
+                        </h3>
+                        ${currentUser && currentUser.role === 'admin' ? `
+                            <button onclick="deleteActivity('${activity.id}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">วันที่เริ่ม:</span>
+                            <span class="font-medium text-gray-700">${formatDate(activity.startDate)} ${activity.startTime || ''}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">วันที่สิ้นสุด:</span>
+                            <span class="font-medium text-gray-700">${formatDate(activity.endDate)} ${activity.endTime || ''}</span>
+                        </div>
+                    </div>
+                    ${activity.description ? `<p class="text-gray-700 text-sm">${activity.description}</p>` : ''}
+                    <p class="text-xs text-gray-500 mt-2">เสนอโดย: ${activity.createdBy}</p>
+                </div>
+            `).join('');
+        }
+
+        function showAddActivityModal() {
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            document.getElementById('addActivityModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addActivityForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const allDay = document.getElementById('activityAllDay').checked;
+            
+            const activity = {
+                id: 'act' + Date.now().toString(),
+                name: document.getElementById('activityName').value,
+                startDate: document.getElementById('activityStartDate').value,
+                startTime: allDay ? '' : document.getElementById('activityStartTime').value,
+                endDate: document.getElementById('activityEndDate').value,
+                endTime: allDay ? '' : document.getElementById('activityEndTime').value,
+                description: document.getElementById('activityDescription').value,
+                allDay: allDay,
+                approved: currentUser && currentUser.role === 'admin',
+                createdBy: currentUser.email,
+                type: 'กิจกรรม' // default type
+            };
+
+            sampleData.activities.push(activity);
+            closeModal('addActivityModal');
+            
+            if (activity.approved) {
+                updateDataAndRefresh('activities');
+                showNotification('เพิ่มกิจกรรมสำเร็จ', 'success');
+            } else {
+                updateDataAndRefresh('approvals');
+                showNotification('ส่งคำขอเพิ่มกิจกรรมแล้ว รอการอนุมัติ', 'success');
+            }
+            
+            this.reset();
+        });
+
+        function deleteActivity(id) {
+            if (currentUser && currentUser.role === 'admin') {
+                sampleData.activities = sampleData.activities.filter(activity => activity.id !== id);
+                updateDataAndRefresh('activities');
+                showNotification('ลบกิจกรรมสำเร็จ', 'success');
+            }
+        }
+        
+        // ... (Functions for Links, Documents, Equipment, Calendar, Admin, Change Password remain largely the same, but now use the centralized `updateDataAndRefresh` and the correct `currentUser` logic) ...
+        
+        // Links functions
+        function loadLinks() {
+            const container = document.getElementById('linksList');
+            const links = currentUser && currentUser.role === 'admin' 
+                ? sampleData.links.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                : sampleData.links.filter(link => link.approved).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            if (links.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">ยังไม่มีลิงก์</div>';
+                return;
+            }
+
+            container.innerHTML = links.map(link => `
+                <div class="bg-gray-50 rounded-xl p-6 ${!link.approved ? 'border-2 border-yellow-400' : ''}">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            ${link.name}
+                            ${!link.approved ? '<span class="text-sm px-2 py-1 bg-yellow-400 text-white rounded-full ml-2">รออนุมัติ</span>' : ''}
+                        </h3>
+                        ${currentUser && currentUser.role === 'admin' ? `
+                            <button onclick="deleteLink('${link.id}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    ${link.description ? `<p class="text-gray-700 mb-4 text-sm">${link.description}</p>` : ''}
+                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm">
+                        เยี่ยมชม <i class="fas fa-external-link-alt ml-2"></i>
+                    </a>
+                    <p class="text-xs text-gray-500 mt-2">เสนอโดย: ${link.createdBy}</p>
+                </div>
+            `).join('');
+        }
+
+        function showAddLinkModal() {
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            document.getElementById('addLinkModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addLinkForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const link = {
+                id: 'link' + Date.now().toString(),
+                name: document.getElementById('linkName').value,
+                url: document.getElementById('linkUrl').value,
+                description: document.getElementById('linkDescription').value,
+                approved: currentUser && currentUser.role === 'admin',
+                createdBy: currentUser.email,
+                createdAt: new Date()
+            };
+
+            sampleData.links.push(link);
+            closeModal('addLinkModal');
+            
+            if (link.approved) {
+                updateDataAndRefresh('links');
+                showNotification('เพิ่มลิงก์สำเร็จ', 'success');
+            } else {
+                updateDataAndRefresh('approvals');
+                showNotification('ส่งคำขอเพิ่มลิงก์แล้ว รอการอนุมัติ', 'success');
+            }
+            
+            this.reset();
+        });
+
+        function deleteLink(id) {
+            if (currentUser && currentUser.role === 'admin') {
+                sampleData.links = sampleData.links.filter(link => link.id !== id);
+                updateDataAndRefresh('links');
+                showNotification('ลบลิงก์สำเร็จ', 'success');
+            }
+        }
+        
+        // Documents functions
+        function loadDocuments() {
+            const container = document.getElementById('documentsList');
+            const documents = currentUser && currentUser.role === 'admin' 
+                ? sampleData.documents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                : sampleData.documents.filter(doc => doc.approved).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            if (documents.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">ยังไม่มีเอกสาร</div>';
+                return;
+            }
+
+            container.innerHTML = documents.map(doc => `
+                <div class="bg-gray-50 rounded-xl p-6 ${!doc.approved ? 'border-2 border-yellow-400' : ''}">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            ${doc.name}
+                            ${!doc.approved ? '<span class="text-sm px-2 py-1 bg-yellow-400 text-white rounded-full ml-2">รออนุมัติ</span>' : ''}
+                        </h3>
+                        ${currentUser && currentUser.role === 'admin' ? `
+                            <button onclick="deleteDocument('${doc.id}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    ${doc.description ? `<p class="text-gray-700 mb-4 text-sm">${doc.description}</p>` : ''}
+                    <a href="${doc.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm">
+                        ดาวน์โหลด <i class="fas fa-download ml-2"></i>
+                    </a>
+                    <p class="text-xs text-gray-500 mt-2">เสนอโดย: ${doc.createdBy}</p>
+                </div>
+            `).join('');
+        }
+
+        function showAddDocumentModal() {
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            document.getElementById('addDocumentModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addDocumentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const documentData = {
+                id: 'doc' + Date.now().toString(),
+                name: document.getElementById('documentName').value,
+                url: document.getElementById('documentUrl').value,
+                description: document.getElementById('documentDescription').value,
+                approved: currentUser && currentUser.role === 'admin',
+                createdBy: currentUser.email,
+                createdAt: new Date()
+            };
+
+            sampleData.documents.push(documentData);
+            closeModal('addDocumentModal');
+            
+            if (documentData.approved) {
+                updateDataAndRefresh('documents');
+                showNotification('เพิ่มเอกสารสำเร็จ', 'success');
+            } else {
+                updateDataAndRefresh('approvals');
+                showNotification('ส่งคำขอเพิ่มเอกสารแล้ว รอการอนุมัติ', 'success');
+            }
+            
+            this.reset();
+        });
+
+        function deleteDocument(id) {
+            if (currentUser && currentUser.role === 'admin') {
+                sampleData.documents = sampleData.documents.filter(doc => doc.id !== id);
+                updateDataAndRefresh('documents');
+                showNotification('ลบเอกสารสำเร็จ', 'success');
+            }
+        }
+        
+        // Equipment functions
+        function loadEquipment() {
+            if (!currentUser) return;
+            loadAvailableEquipment();
+            loadBorrowedEquipment();
+        }
+
+        function loadAvailableEquipment() {
+            const container = document.getElementById('availableEquipmentList');
+            const availableEquipment = sampleData.equipment.filter(item => item.available > 0);
+
+            if (availableEquipment.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">ไม่มีอุปกรณ์ว่าง</p>';
+                return;
+            }
+
+            container.innerHTML = availableEquipment.map(item => `
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium text-gray-800">${item.name}</h4>
+                            <p class="text-sm text-gray-600">คงเหลือ: ${item.available} ชิ้น</p>
+                            ${item.description ? `<p class="text-xs text-gray-500 mt-1">${item.description}</p>` : ''}
+                        </div>
+                        <button onclick="borrowEquipment('${item.id}')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex-shrink-0">
+                            ยืม
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadBorrowedEquipment() {
+            const container = document.getElementById('borrowedEquipmentList');
+            const userBorrowedEquipment = sampleData.borrowedEquipment.filter(item => item.borrowedBy === currentUser.email);
+
+            if (userBorrowedEquipment.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">ไม่มีอุปกรณ์ที่ยืม</p>';
+                return;
+            }
+
+            container.innerHTML = userBorrowedEquipment.map(item => `
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium text-gray-800">${item.name}</h4>
+                            <p class="text-sm text-gray-600">ยืมเมื่อ: ${formatDate(item.borrowedDate)}</p>
+                        </div>
+                        <button onclick="returnEquipment('${item.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex-shrink-0">
+                            คืน
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function borrowEquipment(equipmentId) {
+            const equipment = sampleData.equipment.find(item => item.id === equipmentId);
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            
+            if (equipment && equipment.available > 0) {
+                equipment.available--;
+                equipment.borrowed++;
+                
+                sampleData.borrowedEquipment.push({
+                    id: 'borrow' + Date.now().toString(),
+                    equipmentId: equipmentId,
+                    name: equipment.name,
+                    borrowedBy: currentUser.email,
+                    borrowedDate: new Date().toISOString().split('T')[0]
+                });
+                
+                updateDataAndRefresh('equipment');
+                showNotification('ยืมอุปกรณ์สำเร็จ', 'success');
+            } else {
+                 showNotification('อุปกรณ์ไม่ว่างให้ยืม', 'error');
+            }
+        }
+
+        function returnEquipment(borrowId) {
+            const borrowedItem = sampleData.borrowedEquipment.find(item => item.id === borrowId);
+            if (borrowedItem) {
+                const equipment = sampleData.equipment.find(item => item.id === borrowedItem.equipmentId);
+                if (equipment) {
+                    equipment.available++;
+                    equipment.borrowed--;
+                }
+                
+                sampleData.borrowedEquipment = sampleData.borrowedEquipment.filter(item => item.id !== borrowId);
+                
+                updateDataAndRefresh('equipment');
+                showNotification('คืนอุปกรณ์สำเร็จ', 'success');
+            }
+        }
+
+        // Calendar functions
+        function loadCalendar() {
+            updateCalendarHeader();
+            generateCalendar();
+        }
+
+        function updateCalendarHeader() {
+            const monthNames = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            document.getElementById('currentMonth').textContent = `${monthNames[currentMonth]} ${currentYear + 543}`;
+        }
+
+        function generateCalendar() {
+            const calendar = document.getElementById('fullCalendar');
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const startDayOfWeek = firstDay.getDay(); // 0 for Sunday
+            
+            // Calculate the start date of the calendar grid
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - startDayOfWeek);
+
+            let calendarHTML = '';
+            const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            
+            // Add day headers
+            dayNames.forEach(day => {
+                calendarHTML += `<div class="day-header">${day}</div>`;
+            });
+
+            // Add calendar days
+            for (let i = 0; i < 42; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                
+                const isCurrentMonth = date.getMonth() === currentMonth;
+                const isToday = date.toDateString() === new Date().toDateString();
+                const events = getEventsForDate(date);
+                
+                calendarHTML += `
+                    <div class="calendar-day min-h-[100px] p-2 border-b border-r ${isCurrentMonth ? 'bg-white' : 'bg-gray-100'} ${isToday ? 'bg-purple-100' : ''}">
+                        <div class="font-medium text-right ${isCurrentMonth ? 'text-gray-800' : 'text-gray-400'} ${isToday ? 'text-purple-700' : ''} mb-1">
+                            ${date.getDate()}
+                        </div>
+                        <div class="space-y-1">
+                            ${events.map(event => `
+                                <div class="text-xs p-1 rounded overflow-hidden whitespace-nowrap text-ellipsis cursor-pointer hover:shadow-md transition-shadow ${event.type === 'ประชุม' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}" title="${event.name}">
+                                    ${event.name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            calendar.innerHTML = calendarHTML;
+        }
+
+        function getEventsForDate(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            
+            // Combine and filter only approved events, or all if admin is viewing the admin page (but calendar page should show only approved for all users)
+            return [...sampleData.activities, ...sampleData.calendarEvents]
+                .filter(event => event.approved && (event.startDate <= dateStr && event.endDate >= dateStr))
+                .sort((a, b) => (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || a.startTime.localeCompare(b.startTime));
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            loadCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            loadCalendar();
+        }
+
+        function goToToday() {
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            loadCalendar();
+        }
+
+        function showAddCalendarEventModal() {
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            document.getElementById('addCalendarEventModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addCalendarEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const allDay = document.getElementById('calendarEventAllDay').checked;
+            
+            const event = {
+                id: 'cal' + Date.now().toString(),
+                name: document.getElementById('calendarEventName').value,
+                type: document.getElementById('calendarEventType').value,
+                startDate: document.getElementById('calendarEventStartDate').value,
+                startTime: allDay ? '' : document.getElementById('calendarEventStartTime').value,
+                endDate: document.getElementById('calendarEventEndDate').value,
+                endTime: allDay ? '' : document.getElementById('calendarEventEndTime').value,
+                description: document.getElementById('calendarEventDescription').value,
+                allDay: allDay,
+                approved: currentUser && currentUser.role === 'admin',
+                createdBy: currentUser.email
+            };
+
+            sampleData.calendarEvents.push(event);
+            closeModal('addCalendarEventModal');
+            
+            if (event.approved) {
+                updateDataAndRefresh('calendarEvents');
+                showNotification('เพิ่มกิจกรรมปฏิทินสำเร็จ', 'success');
+            } else {
+                updateDataAndRefresh('approvals');
+                showNotification('ส่งคำขอเพิ่มกิจกรรมปฏิทินแล้ว รอการอนุมัติ', 'success');
+            }
+            
+            this.reset();
+        });
+
+        // Admin functions (Simplified for in-memory)
+        function loadAdmin() {
+            if (currentUser && currentUser.role === 'admin') {
+                loadPendingApprovals();
+                loadEquipmentManagement();
+                loadUserManagement();
+            }
+        }
+
+        function loadPendingApprovals() {
+             // In a real app, you would fetch unapproved items from Firestore
+            
+            const pendingItems = [
+                ...sampleData.activities.filter(a => !a.approved).map(a => ({ ...a, type: 'activity', name: `[กิจกรรม] ${a.name}` })),
+                ...sampleData.links.filter(l => !l.approved).map(l => ({ ...l, type: 'link', name: `[ลิงก์] ${l.name}` })),
+                ...sampleData.documents.filter(d => !d.approved).map(d => ({ ...d, type: 'document', name: `[เอกสาร] ${d.name}` })),
+                ...sampleData.calendarEvents.filter(e => !e.approved).map(e => ({ ...e, type: 'calendarEvent', name: `[ปฏิทิน] ${e.name}` })),
+            ];
+
+            const renderApprovalList = (list, containerId) => {
+                const container = document.getElementById(containerId);
+                const items = list.filter(item => item.type === containerId.replace('pending', '').toLowerCase().replace('events', 'event'));
+                
+                if (items.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-sm">ไม่มีคำขอรออนุมัติ</p>';
+                    return;
+                }
+                
+                container.innerHTML = items.map(item => `
+                    <div class="flex justify-between items-center p-2 bg-yellow-50 rounded-lg">
+                        <span class="text-sm">${item.name} <span class="text-xs text-gray-500 ml-1">(${item.createdBy})</span></span>
+                        <div class="space-x-2 flex-shrink-0">
+                            <button onclick="approveItem('${item.type}', '${item.id}')" class="text-green-600 hover:text-green-800 text-sm">อนุมัติ</button>
+                            <button onclick="rejectItem('${item.type}', '${item.id}')" class="text-red-600 hover:text-red-800 text-sm">ปฏิเสธ</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            renderApprovalList(pendingItems, 'pendingActivities');
+            renderApprovalList(pendingItems, 'pendingLinks');
+            renderApprovalList(pendingItems, 'pendingDocuments');
+            renderApprovalList(pendingItems, 'pendingCalendarEvents');
+        }
+        
+        function approveItem(type, id) {
+            let item;
+            switch(type) {
+                case 'activity': item = sampleData.activities.find(a => a.id === id); break;
+                case 'link': item = sampleData.links.find(l => l.id === id); break;
+                case 'document': item = sampleData.documents.find(d => d.id === id); break;
+                case 'calendarEvent': item = sampleData.calendarEvents.find(e => e.id === id); break;
+            }
+            
+            if (item) {
+                item.approved = true;
+                updateDataAndRefresh('approvals');
+                showNotification(`อนุมัติ ${item.name.substring(item.name.indexOf(']') + 2)} สำเร็จ`, 'success');
+            }
+        }
+
+        function rejectItem(type, id) {
+             switch(type) {
+                case 'activity': sampleData.activities = sampleData.activities.filter(a => a.id !== id); break;
+                case 'link': sampleData.links = sampleData.links.filter(l => l.id !== id); break;
+                case 'document': sampleData.documents = sampleData.documents.filter(d => d.id !== id); break;
+                case 'calendarEvent': sampleData.calendarEvents = sampleData.calendarEvents.filter(e => e.id !== id); break;
+            }
+            updateDataAndRefresh('approvals');
+            showNotification(`ปฏิเสธคำขอสำเร็จ`, 'success');
+        }
+        
+        function loadEquipmentManagement() {
+            const container = document.getElementById('equipmentManagement');
+            container.innerHTML = sampleData.equipment.map(item => `
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800">${item.name}</h4>
+                        <button onclick="deleteEquipment('${item.id}')" class="text-red-500 hover:text-red-700 flex-shrink-0">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div><span class="text-gray-600">ทั้งหมด:</span> ${item.total}</div>
+                        <div><span class="text-gray-600">ว่าง:</span> <span class="text-green-600 font-bold">${item.available}</span></div>
+                        <div><span class="text-gray-600">ถูกยืม:</span> <span class="text-orange-600 font-bold">${item.borrowed}</span></div>
+                    </div>
+                    ${item.description ? `<p class="text-xs text-gray-500 mt-2">${item.description}</p>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // **🚨 User Management Functions - Must be fully implemented with Firebase Firestore**
+        async function loadUserManagement() {
+             try {
+                const container = document.getElementById('userManagement');
+                // Fetching from Firestore is correct here
+                const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+                
+                if (usersSnapshot.empty) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">ไม่มีผู้ใช้งาน</p>';
+                    return;
+                }
+
+                const usersHTML = usersSnapshot.docs.map(doc => {
+                    const user = doc.data();
+                    const uid = doc.id;
+                    const is_admin = user.role === 'admin';
+                    
+                    return `
+                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                            <div>
+                                <h4 class="font-medium text-gray-800">${user.prefix || ''}${user.firstName || ''} ${user.lastName || ''}</h4>
+                                <p class="text-sm text-gray-600">${user.email}</p>
+                                <span class="text-xs px-2 py-1 rounded-full ${user.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                    ${user.approved ? 'อนุมัติแล้ว' : 'รออนุมัติ'}
+                                </span>
+                                ${is_admin ? '<span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 ml-2">ADMIN</span>' : ''}
+                            </div>
+                            <div class="space-x-2 flex-shrink-0">
+                                ${!user.approved ? `<button onclick="approveUser('${uid}')" class="text-green-600 hover:text-green-800 text-sm">อนุมัติ</button>` : ''}
+                                <button onclick="sendPasswordReset('${user.email}')" class="text-blue-600 hover:text-blue-800 text-sm">รีเซ็ต</button>
+                                ${!is_admin ? `<button onclick="deleteUser('${uid}')" class="text-red-600 hover:text-red-800 text-sm">ลบ</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = usersHTML;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('userManagement').innerHTML = '<p class="text-red-500 text-center py-8">เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้: ' + error.message + '</p>';
+            }
+        }
+
+        async function approveUser(uid) {
+            try {
+                // Update Firestore
+                await db.collection('users').doc(uid).update({
+                    approved: true,
+                    approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                loadUserManagement();
+                showNotification('อนุมัติผู้ใช้สำเร็จ', 'success');
+            } catch (error) {
+                console.error('Error approving user:', error);
+                showNotification('เกิดข้อผิดพลาดในการอนุมัติผู้ใช้', 'error');
+            }
+        }
+
+        async function deleteUser(uid) {
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะลบผู้ใช้นี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) return;
+            try {
+                // NOTE: Deleting user in Auth requires a server function. 
+                // We'll only delete the Firestore record for this client-side code.
+                await db.collection('users').doc(uid).delete();
+                loadUserManagement();
+                showNotification('ลบข้อมูลผู้ใช้จาก Firestore สำเร็จ (ผู้ใช้อาจยังคงอยู่ใน Firebase Auth)', 'success');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showNotification('เกิดข้อผิดพลาดในการลบผู้ใช้', 'error');
+            }
+        }
+
+        async function sendPasswordReset(email) {
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showNotification(`ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง ${email} แล้ว`, 'success');
+            } catch (error) {
+                console.error('Error sending password reset:', error);
+                showNotification('เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ตรหัสผ่าน', 'error');
+            }
+        }
+
+        // Equipment management functions
+        function showAddEquipmentModal() {
+            if (!currentUser || currentUser.role !== 'admin') return showNotification('คุณไม่มีสิทธิ์', 'error');
+            document.getElementById('addEquipmentModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addEquipmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const quantity = parseInt(document.getElementById('equipmentQuantity').value);
+            const equipment = {
+                id: 'eq' + Date.now().toString(),
+                name: document.getElementById('equipmentName').value,
+                total: quantity,
+                available: quantity,
+                borrowed: 0,
+                description: document.getElementById('equipmentDescription').value
+            };
+
+            sampleData.equipment.push(equipment);
+            closeModal('addEquipmentModal');
+            updateDataAndRefresh('equipment');
+            showNotification('เพิ่มอุปกรณ์สำเร็จ', 'success');
+            
+            this.reset();
+        });
+
+        function deleteEquipment(id) {
+            if (currentUser && currentUser.role === 'admin') {
+                sampleData.equipment = sampleData.equipment.filter(item => item.id !== id);
+                // Also remove related borrowed items (simplification)
+                sampleData.borrowedEquipment = sampleData.borrowedEquipment.filter(item => item.equipmentId !== id);
+                updateDataAndRefresh('equipment');
+                showNotification('ลบอุปกรณ์สำเร็จ', 'success');
+            }
+        }
+
+        // Change password functions
+        function showChangePassword() {
+            if (!currentUser) return showNotification('กรุณาเข้าสู่ระบบก่อน', 'error');
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showNotification('รหัสผ่านใหม่ไม่ตรงกัน', 'error');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showNotification('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+                return;
+            }
+
+            try {
+                const user = auth.currentUser;
+                // Important: Re-authenticate is needed for security-sensitive operations like password change
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                
+                await user.reauthenticateWithCredential(credential);
+                await user.updatePassword(newPassword);
+                
+                closeModal('changePasswordModal');
+                showNotification('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
+                this.reset();
+            } catch (error) {
+                console.error('Error changing password:', error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน';
+                
+                switch (error.code) {
+                    case 'auth/wrong-password':
+                        errorMessage = 'รหัสผ่านปัจจุบันไม่ถูกต้อง';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร';
+                        break;
+                    case 'auth/requires-recent-login':
+                        errorMessage = 'กรุณาเข้าสู่ระบบใหม่ก่อนเปลี่ยนรหัสผ่าน (เพื่อความปลอดภัย)';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        });
+
+        // Utility functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        // Handle all day checkbox changes
+        document.getElementById('activityAllDay').addEventListener('change', function() {
+            const startTime = document.getElementById('activityStartTime');
+            const endTime = document.getElementById('activityEndTime');
+            
+            if (this.checked) {
+                startTime.disabled = true;
+                endTime.disabled = true;
+                startTime.value = '';
+                endTime.value = '';
+            } else {
+                startTime.disabled = false;
+                endTime.disabled = false;
+            }
+        });
+
+        document.getElementById('calendarEventAllDay').addEventListener('change', function() {
+            const startTime = document.getElementById('calendarEventStartTime');
+            const endTime = document.getElementById('calendarEventEndTime');
+            
+            if (this.checked) {
+                startTime.disabled = true;
+                endTime.disabled = true;
+                startTime.value = '';
+                endTime.value = '';
+            } else {
+                startTime.disabled = false;
+                endTime.disabled = false;
+            }
+        });
+
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if admin user exists in in-memory data and adjust demo dates
+            currentMonth = new Date().getMonth();
+            currentYear = new Date().getFullYear();
+            
+            // Set default page to dashboard
+            showPage('dashboard'); 
+            
+            // The Firebase Auth listener will take over and hide/show authPage/mainApp
+        });
+    </script>
+</body>
+</html>
