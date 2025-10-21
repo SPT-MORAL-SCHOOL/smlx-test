@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPT Moral Leadership Committee System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* กำหนดสีหลักและความโค้งมนเพิ่มเติม */
+        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .input-focus:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .is-active { background-color: #e5e7eb; color: #1d4ed8; font-weight: 600; }
+        /* ซ่อนหน้าจอหลักในตอนเริ่มต้น */
+        #dashboard-container { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div id="auth-view" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
+        <div class="text-center mb-8">
+            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="Logo" class="mx-auto w-24 h-24 rounded-full shadow-lg">
+            <h1 class="text-2xl font-extrabold text-gray-800 mt-3">STUDENT MORALITY LEADERSHIP COMMITTEE</h1>
+            <p class="text-gray-500">โรงเรียนสตรีพัทลุง</p>
+        </div>
+
+        <div id="login-card" class="bg-white p-8 md:p-10 rounded-xl card-shadow transition-all duration-300">
+            <h2 class="text-xl font-bold text-gray-700 mb-6 text-center">เข้าสู่ระบบ</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">อีเมล</label>
+                    <input type="email" id="login-email" value="sptmorral@spt.ac.th" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                    <input type="password" id="login-password" value="admin123" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-md hover:shadow-lg">
+                    ลงชื่อเข้าใช้งาน
+                </button>
+            </form>
+            <p class="text-center text-sm text-gray-500 mt-6">
+                ยังไม่มีบัญชี? 
+                <button id="show-register" type="button" class="text-blue-600 hover:text-blue-800 font-medium transition duration-200">ลงทะเบียน</button>
+            </p>
+        </div>
+
+        <div id="register-card" class="bg-white p-8 md:p-10 rounded-xl card-shadow transition-all duration-300 hidden">
+            <h2 class="text-xl font-bold text-gray-700 mb-6 text-center">ลงทะเบียน</h2>
+            <form id="register-form">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="reg-prefix" class="block text-sm font-medium text-gray-700">คำนำหน้าชื่อ</label>
+                        <select id="reg-prefix" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                            <option>เด็กชาย</option><option>เด็กหญิง</option><option>นาย</option><option>นางสาว</option><option>นาง</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="reg-name" class="block text-sm font-medium text-gray-700">ชื่อ</label>
+                        <input type="text" id="reg-name" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="reg-lastname" class="block text-sm font-medium text-gray-700">นามสกุล</label>
+                    <input type="text" id="reg-lastname" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                </div>
+                <div class="mb-4">
+                    <label for="reg-email" class="block text-sm font-medium text-gray-700">อีเมล</label>
+                    <input type="email" id="reg-email" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                </div>
+                <div class="mb-6">
+                    <label for="reg-password" class="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                    <input type="password" id="reg-password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm input-focus" required>
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-md hover:shadow-lg">
+                    ลงทะเบียน (รออนุมัติ)
+                </button>
+            </form>
+            <p class="text-center text-sm text-gray-500 mt-6">
+                มีบัญชีอยู่แล้ว? 
+                <button id="show-login" type="button" class="text-blue-600 hover:text-blue-800 font-medium transition duration-200">เข้าสู่ระบบ</button>
+            </p>
+        </div>
+
+        <footer class="text-center text-xs text-gray-500 mt-8">
+            &copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved
+        </footer>
+    </div>
+</div>
+
+
+<div id="dashboard-container" class="bg-gray-50 min-h-screen">
+    
+    <button id="mobile-menu-btn" class="fixed top-4 left-4 z-50 p-2 rounded-full bg-white shadow-lg lg:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 bg-white shadow-xl transform -translate-x-full lg:translate-x-0 z-40 p-4 rounded-r-3xl">
+        <div class="flex items-center space-x-3 mb-8 px-2">
+            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="Logo" class="w-10 h-10 rounded-full">
+            <span class="text-lg font-bold text-gray-800">SPT Moral</span>
+        </div>
+
+        <nav class="space-y-2">
+            <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl is-active" data-page="home">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l-7-7-7 7m14 0v10a1 1 0 01-1 1h-3m-6 0h-2M5 10l-2 2m0 0l7 7 7-7M5 10h14" /></svg>
+                <span class="text-sm">หน้าหลัก</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl" data-page="activities">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="text-sm">กิจกรรม</span>
+            </a>
+             <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl" data-page="calendar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="text-sm">ปฏิทิน</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl" data-page="equipment">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8h12a2 2 0 002-2v-3.5a1.5 1.5 0 00-1.5-1.5h-10A1.5 1.5 0 004 15.5v3.5a2 2 0 002 2z" /></svg>
+                <span class="text-sm">ยืม-คืนอุปกรณ์</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl" data-page="links">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M16.172 3.828l-1.102 1.101m-.758 4.868a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M21 21L12 12" /></svg>
+                <span class="text-sm">ลิงก์</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl" data-page="documents">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-10H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" /></svg>
+                <span class="text-sm">เอกสาร</span>
+            </a>
+
+            <div id="admin-menu" class="hidden">
+                <div class="border-t pt-2 mt-2"></div>
+                <h4 class="text-xs text-gray-400 uppercase tracking-wider px-3 py-1 mt-2">ผู้ดูแล</h4>
+                <a href="#" class="flex items-center space-x-3 p-3 text-red-600 hover:bg-red-50 rounded-xl" data-page="admin">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.945 3.31.868 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.945 1.543-.868 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.945-3.31-.868-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.945-1.543.868-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <span class="text-sm">จัดการระบบ</span>
+                </a>
+            </div>
+
+            <div class="border-t pt-4 mt-6"></div>
+            <a href="#" id="change-password-btn" class="flex items-center space-x-3 p-3 text-gray-600 hover:bg-gray-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7l-7 7 7 7" /></svg>
+                <span class="text-sm">แก้ไขรหัสผ่าน</span>
+            </a>
+            <a href="#" id="logout-btn" class="flex items-center space-x-3 p-3 text-red-600 hover:bg-red-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                <span class="text-sm">ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+
+    <div class="lg:ml-64 p-4 lg:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800" id="page-title">หน้าหลัก</h1>
+            <p class="text-gray-500">ยินดีต้อนรับ, <span id="user-display-name" class="font-medium">...</span></p>
+        </header>
+
+        <main id="page-content">
+            <section id="home-page" class="page-section">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700">📆 กิจกรรมและปฏิทินที่จะมาถึง</h2>
+                        <div id="upcoming-events" class="space-y-3">
+                            <div class="bg-gray-50 p-3 rounded-lg border">กิจกรรมทดสอบ: วันที่ 25 ต.ค. (กำลังดึงข้อมูล...)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700">🗓️ ปฏิทิน</h2>
+                        <div id="mini-calendar" class="text-center bg-blue-50 p-4 rounded-lg">
+                            <p class="text-blue-700 font-medium">ส่วนแสดงปฏิทินย่อ</p>
+                            <p class="text-xs text-gray-500 mt-1">ใช้ข้อมูลจากหน้ากิจกรรมและปฏิทิน</p>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700">📊 สถานะอุปกรณ์</h2>
+                        <p class="text-4xl font-bold text-blue-600">3/10</p>
+                        <p class="text-sm text-gray-500">ยืมแล้ว 3 ชิ้น จากทั้งหมด 10 ชิ้น</p>
+                        <button onclick="loadPage('equipment')" class="mt-3 inline-block text-blue-500 hover:text-blue-700 text-sm font-medium">จัดการอุปกรณ์ →</button>
+                    </div>
+                    
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700">🔗 ลิงก์ล่าสุด</h2>
+                        <ul id="latest-links" class="space-y-2">
+                            <li><a href="#" class="text-blue-500 hover:underline">แบบฟอร์มขออนุมัติ</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700">📄 เอกสารล่าสุด</h2>
+                        <ul id="latest-documents" class="space-y-2">
+                            <li><a href="#" class="text-blue-500 hover:underline">แผนงานปีการศึกษา 2567</a></li>
+                        </ul>
+                    </div>
+
+                </div>
+            </section>
+            
+            <section id="activities-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6">หน้าจัดการกิจกรรม</h2>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-semibold text-lg mb-3">เพิ่มกิจกรรมใหม่</h3>
+                    <form id="add-activity-form" class="space-y-4">
+                        <input type="text" placeholder="ชื่อกิจกรรม" class="w-full p-2 border rounded-lg" required>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="date" placeholder="วันที่เริ่ม" class="w-full p-2 border rounded-lg" required>
+                            <input type="time" placeholder="เวลาที่เริ่ม" class="w-full p-2 border rounded-lg" required>
+                        </div>
+                         <div class="grid grid-cols-2 gap-4">
+                            <input type="date" placeholder="วันที่สิ้นสุด" class="w-full p-2 border rounded-lg" required>
+                            <input type="time" placeholder="เวลาที่สิ้นสุด" class="w-full p-2 border rounded-lg" required>
+                        </div>
+                        <textarea placeholder="รายละเอียด" rows="3" class="w-full p-2 border rounded-lg"></textarea>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox"> <span>กรณีตลอดทั้งวัน</span>
+                        </label>
+                        <button type="submit" class="bg-green-500 text-white p-2 rounded-xl hover:bg-green-600">บันทึกกิจกรรม (รออนุมัติ)</button>
+                    </form>
+                </div>
+                <div class="mt-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-semibold text-lg mb-3">รายการกิจกรรมที่รออนุมัติ/อนุมัติแล้ว</h3>
+                    <p class="text-gray-500">ตัวอย่างกิจกรรม...</p>
+                </div>
+            </section>
+
+             <section id="equipment-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6">หน้ายืม-คืนอุปกรณ์</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="font-semibold text-lg mb-3">อุปกรณ์คงเหลือ</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-blue-50 p-3 rounded-lg border">
+                                <span>ไมโครโฟนไร้สาย (คงเหลือ: 5)</span>
+                                <button class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">ยืมอุปกรณ์</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="font-semibold text-lg mb-3">อุปกรณ์ที่ยืม</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-yellow-50 p-3 rounded-lg border">
+                                <span>โปรเจคเตอร์ (วันที่ยืม: 20/10)</span>
+                                <button class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600">คืนอุปกรณ์</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="admin-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6 text-red-600">หน้าจัดการระบบ (ผู้ดูแล)</h2>
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="font-semibold text-xl mb-4">คำขออนุมัติต่างๆ</h3>
+                        <div class="space-y-4">
+                            <h4 class="font-medium text-gray-600">👤 คำขอลงทะเบียนใหม่</h4>
+                            <div class="bg-red-50 p-3 rounded-lg border flex justify-between items-center">
+                                <span>นางสาว ก. ไก่ (korkai@spt.ac.th)</span>
+                                <div>
+                                    <button class="text-green-600 hover:text-green-800 mr-3">อนุมัติ</button>
+                                    <button class="text-red-600 hover:text-red-800">ปฏิเสธ</button>
+                                </div>
+                            </div>
+                            <h4 class="font-medium text-gray-600 mt-4">✍️ คำขอเพิ่มกิจกรรม/ลิงก์/เอกสาร</h4>
+                             <div class="bg-yellow-50 p-3 rounded-lg border flex justify-between items-center">
+                                <span>[กิจกรรม] งานวันคุณธรรม (โดย ข.ไข่)</span>
+                                <div>
+                                    <button class="text-green-600 hover:text-green-800 mr-3">อนุมัติ</button>
+                                    <button class="text-red-600 hover:text-red-800">ลบ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <h3 class="font-semibold text-xl mb-4">⚙️ จัดการอุปกรณ์</h3>
+                         <form class="flex space-x-3 mb-4">
+                            <input type="text" placeholder="ชื่ออุปกรณ์" class="p-2 border rounded-lg flex-grow" required>
+                            <input type="number" placeholder="จำนวน" class="w-20 p-2 border rounded-lg" required>
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-xl">เพิ่ม</button>
+                        </form>
+                        <div class="space-y-2">
+                             <div class="flex justify-between items-center p-3 border rounded-lg">
+                                <span>โปรเจคเตอร์ (ทั้งหมด: 3, ยืมอยู่: 1)</span>
+                                <div>
+                                     <button class="text-red-600 hover:text-red-800 mr-3">บังคับคืน</button>
+                                     <button class="text-gray-600 hover:text-red-800">ลบ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <h3 class="font-semibold text-xl mb-4">👥 จัดการผู้ใช้งาน</h3>
+                         <div class="space-y-2">
+                             <div class="flex justify-between items-center p-3 border rounded-lg">
+                                <span>นาย กิตติ (kitti@spt.ac.th) - Member</span>
+                                <div>
+                                     <button class="text-blue-600 hover:text-blue-800 mr-3">ส่งลิงก์รีเซ็ต</button>
+                                     <button class="text-red-600 hover:text-red-800">ลบบัญชี</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+             <section id="links-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6">หน้าจัดการลิงก์</h2>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">เนื้อหาสำหรับการเพิ่มและแสดงรายการลิงก์ (รออนุมัติ) จะอยู่ที่นี่</div>
+            </section>
+            <section id="documents-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6">หน้าจัดการเอกสาร</h2>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">เนื้อหาสำหรับการเพิ่มและแสดงรายการเอกสาร (รออนุมัติ) จะอยู่ที่นี่</div>
+            </section>
+            <section id="calendar-page" class="page-section hidden">
+                <h2 class="text-2xl font-bold mb-6">หน้าปฏิทิน</h2>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">เนื้อหาสำหรับการเพิ่มและแสดงปฏิทินแบบเต็ม (มีประเภทกิจกรรม/ประชุม) จะอยู่ที่นี่</div>
+            </section>
+            
+
+        </main>
+    </div>
+
+    <footer class="lg:ml-64 p-4 border-t mt-10">
+        <div class="text-center text-xs text-gray-500">
+            &copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved
+        </div>
+    </footer>
+</div>
+
+
+<script>
+    // 📌 1. Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw",
+        authDomain: "clip-61b0b.firebaseapp.com",
+        projectId: "clip-61b0b",
+        storageBucket: "clip-61b0b.firebasestorage.app",
+        messagingSenderId: "63156543329",
+        appId: "1:63156543329:web:9243a29ec5e3cf4225af20",
+        measurementId: "G-JCJVWHD6YK"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = app.auth();
+    const db = app.firestore();
+
+    // 📌 2. User Roles and Admin Email
+    const ADMIN_EMAIL = 'sptmorral@spt.ac.th';
+
+    // ------------------------------------------------------------------
+    // A. Auth View Logic
+    // ------------------------------------------------------------------
+    const authView = document.getElementById('auth-view');
+    const dashboardContainer = document.getElementById('dashboard-container');
+
+    const loginCard = document.getElementById('login-card');
+    const registerCard = document.getElementById('register-card');
+    const showRegisterBtn = document.getElementById('show-register');
+    const showLoginBtn = document.getElementById('show-login');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    // สลับหน้า Login/Register UI
+    if (showRegisterBtn) {
+        showRegisterBtn.addEventListener('click', () => {
+            loginCard.classList.add('hidden');
+            registerCard.classList.remove('hidden');
+        });
+        showLoginBtn.addEventListener('click', () => {
+            registerCard.classList.add('hidden');
+            loginCard.classList.remove('hidden');
+        });
+    }
+
+    // 1. **Login Handler**
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+
+                if (!userData || !userData.isApproved) {
+                    await auth.signOut();
+                    alert('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแล');
+                    return;
+                }
+
+                // หากสำเร็จ onAuthStateChanged จะจัดการเปลี่ยนหน้า
+
+            } catch (error) {
+                alert('ลงชื่อเข้าใช้งานล้มเหลว: ' + error.message);
+            }
+        });
+    }
+
+    // 2. **Register Handler (ต้องรออนุมัติ)**
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const prefix = document.getElementById('reg-prefix').value;
+            const name = document.getElementById('reg-name').value;
+            const lastname = document.getElementById('reg-lastname').value;
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                await db.collection('users').doc(user.uid).set({
+                    prefix: prefix,
+                    name: name,
+                    lastname: lastname,
+                    email: email,
+                    role: email === ADMIN_EMAIL ? 'admin' : 'member',
+                    isApproved: email === ADMIN_EMAIL ? true : false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('ลงทะเบียนสำเร็จ! โปรดรอผู้ดูแลอนุมัติบัญชีของคุณ');
+                await auth.signOut();
+                document.getElementById('reg-email').value = ''; // Clear form
+                document.getElementById('reg-password').value = '';
+                showLoginBtn.click();
+
+            } catch (error) {
+                alert('ลงทะเบียนล้มเหลว: ' + error.message);
+            }
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // B. Dashboard Logic
+    // ------------------------------------------------------------------
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const navLinks = document.querySelectorAll('nav a[data-page]');
+    const logoutBtn = document.getElementById('logout-btn');
+    const adminMenu = document.getElementById('admin-menu');
+    const pageTitle = document.getElementById('page-title');
+
+    // **Navigation Function**
+    function loadPage(pageName) {
+        // อัปเดต Title
+        const titleMap = {
+            'home': 'หน้าหลัก', 'activities': 'กิจกรรม', 'calendar': 'ปฏิทิน', 
+            'equipment': 'ยืม-คืนอุปกรณ์', 'links': 'ลิงก์', 'documents': 'เอกสาร', 
+            'admin': 'จัดการระบบ (ผู้ดูแล)'
+        };
+        pageTitle.textContent = titleMap[pageName] || 'แดชบอร์ด';
+
+        // ซ่อนทุกหน้า
+        document.querySelectorAll('.page-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // แสดงหน้าที่ต้องการ
+        const targetSection = document.getElementById(`${pageName}-page`);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        } else {
+             // Fallback/Content for non-implemented pages
+             document.getElementById('page-content').innerHTML = `
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-xl shadow-lg" role="alert">
+                    <p class="font-bold">หน้า ${pageTitle.textContent}</p>
+                    <p>ส่วนนี้พร้อมสำหรับการพัฒนาต่อยอดเพื่อเชื่อมต่อกับ Firestore ในการเพิ่ม/ลบ/แก้ไขข้อมูล</p>
+                </div>
+            `;
+        }
+    }
+
+    // Event Listeners for Navigation
+    if (navLinks.length > 0) {
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.getAttribute('data-page');
+                
+                navLinks.forEach(l => l.classList.remove('is-active'));
+                link.classList.add('is-active');
+
+                sidebar.classList.add('-translate-x-full'); // Hide sidebar on mobile
+
+                loadPage(page);
+            });
+        });
+    }
+
+    // Mobile Menu Toggle
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+    }
+
+    // Log Out
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await auth.signOut();
+                // onAuthStateChanged จะจัดการเปลี่ยนหน้า
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+    }
+    
+    // Change Password
+    if (document.getElementById('change-password-btn')) {
+        document.getElementById('change-password-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = auth.currentUser ? auth.currentUser.email : null;
+            if (!email) {
+                alert('ไม่พบข้อมูลผู้ใช้งาน');
+                return;
+            }
+            if (confirm(`ต้องการรีเซ็ตรหัสผ่านสำหรับอีเมล ${email} หรือไม่? ระบบจะส่งลิงก์ไปที่อีเมลของคุณ`)) {
+                try {
+                    await auth.sendPasswordResetEmail(email);
+                    alert('ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว โปรดตรวจสอบอีเมล');
+                } catch (error) {
+                    alert('การส่งอีเมลล้มเหลว: ' + error.message);
+                }
+            }
+        });
+    }
+
+
+    // **Auth State Observer**
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            authView.style.display = 'none';
+            dashboardContainer.style.display = 'block';
+
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.data();
+
+            if (userData && userData.isApproved) {
+                const displayName = `${userData.prefix}${userData.name} ${userData.lastname}`;
+                document.getElementById('user-display-name').textContent = displayName;
+
+                // แสดง/ซ่อนเมนูผู้ดูแล
+                if (userData.role === 'admin') {
+                    adminMenu.classList.remove('hidden');
+                } else {
+                    adminMenu.classList.add('hidden');
+                }
+
+                // โหลดหน้าแรก
+                loadPage('home'); 
+
+            } else {
+                // ไม่อนุมัติ: บังคับให้ออกจากระบบ
+                await auth.signOut();
+                alert('บัญชีของคุณยังไม่ได้รับการอนุมัติ กรุณารอการตรวจสอบ');
+                // จะกลับไปหน้า Login อัตโนมัติในรอบถัดไป
+            }
+        } else {
+            // ไม่ได้ลงชื่อเข้าใช้
+            authView.style.display = 'flex';
+            dashboardContainer.style.display = 'none';
+        }
+    });
+
+</script>
+</body>
+</html>
