@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SPT MORAL SCHOOL — Student Morality Leadership Committee</title>
+  <link rel="icon" href="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg">
+  <style>
+    /* --- Reset & base --- */
+    :root{
+      --accent:#6aa6ff;
+      --muted:#f2f6fb;
+      --glass: rgba(255,255,255,0.7);
+      --card-shadow: 0 6px 20px rgba(30,50,90,0.08);
+      --radius:14px;
+      --text:#1f2d3d;
+      --soft:#6b7a90;
+      --success:#2ea44f;
+      --danger:#e25353;
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#f7fbff 0%, #ffffff 50%);color:var(--text)}
+    a{color:inherit}
+    .container{max-width:1200px;margin:28px auto;padding:20px}
+    header.appbar{display:flex;align-items:center;gap:16px;padding:18px;border-radius:16px;background:var(--glass);box-shadow:var(--card-shadow)}
+    header .logo{display:flex;align-items:center;gap:12px}
+    header img.logo-img{width:56px;height:56px;border-radius:12px;object-fit:cover;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    header h1{font-size:18px;margin:0}
+    .card{background:white;border-radius:var(--radius);box-shadow:var(--card-shadow);padding:18px}
+    .muted{color:var(--soft);font-size:13px}
+
+    /* layout */
+    .layout{display:grid;grid-template-columns:260px 1fr;gap:18px;margin-top:18px}
+    nav.sidebar{height:calc(100vh - 160px);position:sticky;top:20px;padding:12px;overflow:auto}
+    nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+    nav button.menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;border:0;background:transparent;cursor:pointer;font-weight:600}
+    nav button.menu-item.active{background:linear-gradient(90deg,var(--muted),#fff);box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)}
+    .top-actions{display:flex;gap:8px;justify-content:flex-end}
+    .btn{border:0;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--accent);color:white}
+    .btn.ghost{background:transparent;border:1px solid #e6eefc;color:var(--accent)}
+    .btn.warn{background:var(--danger);color:white}
+    .row{display:flex;gap:12px;align-items:center}
+    .col{display:flex;flex-direction:column;gap:8px}
+
+    /* dashboard grid */
+    .grid-3{display:grid;grid-template-columns:1fr 320px;gap:12px}
+    .small-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .list .item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;border:1px solid #f1f6fb}
+
+    /* forms */
+    label{font-size:13px;color:var(--soft)}
+    input,select,textarea{padding:10px;border-radius:10px;border:1px solid #e6eefc;background:#fbfdff}
+    textarea{min-height:80px}
+
+    /* responsive */
+    @media (max-width:900px){
+      .layout{grid-template-columns:1fr; }
+      nav.sidebar{display:flex;gap:8px;overflow:auto;height:auto;position:static;padding:6px}
+      header .logo h1{display:none}
+      .top-actions{display:none}
+    }
+
+    /* mobile menu */
+    .mobile-menu{display:none}
+    @media (max-width:700px){.mobile-menu{display:flex;gap:8px}}
+    footer{margin-top:28px;text-align:center;color:var(--soft);font-size:13px;padding:18px}
+    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+
+    /* small helpers */
+    .hint{font-size:13px;color:var(--soft)}
+    .chip{display:inline-block;padding:6px 8px;border-radius:999px;border:1px solid #eef6ff;font-weight:700}
+    .center{display:flex;align-items:center;justify-content:center}
+    .danger{color:var(--danger)}
+  </style>
+  <!-- Firebase SDK (modular v9) -->
+  <script type="module">
+    // ---- Firebase configuration (use the config you provided) ----
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw",
+      authDomain: "clip-61b0b.firebaseapp.com",
+      projectId: "clip-61b0b",
+      storageBucket: "clip-61b0b.firebasestorage.app",
+      messagingSenderId: "63156543329",
+      appId: "1:63156543329:web:9243a29ec5e3cf4225af20",
+      measurementId: "G-JCJVWHD6YK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- Simple helper functions for UI ---
+    const $ = sel => document.querySelector(sel);
+    const qs = sel => Array.from(document.querySelectorAll(sel));
+
+    // --- Elements refs ---
+    let state = {user:null};
+
+    // Render helpers
+    function showView(name){
+      qs('.view').forEach(v=>v.style.display='none');
+      const el = document.getElementById(name);
+      if(el) el.style.display='block';
+      qs('nav button.menu-item').forEach(b=>b.classList.remove('active'));
+      const menu = document.querySelector(`nav button[data-view="${name}"]`);
+      if(menu) menu.classList.add('active');
+    }
+
+    // Auth state handling: if signed in, check Firestore user doc 'status'
+    onAuthStateChanged(auth, async (u)=>{
+      state.user = u;
+      if(u){
+        // load user doc
+        const ud = await getDoc(doc(db,'users',u.uid));
+        if(!ud.exists()){
+          // create minimal doc with pending status until admin approves
+          await setDoc(doc(db,'users',u.uid),{
+            displayName: u.displayName || "",
+            email: u.email,
+            role: 'pending',
+            approved: false,
+            createdAt: serverTimestamp()
+          });
+          alert('บัญชีของคุณถูกสร้างแล้ว รอการอนุมัติจากผู้ดูแลก่อนใช้งาน');
+          await signOut(auth);
+          renderNav(null);
+          showView('login-view');
+          return;
+        }
+        const uddata = ud.data();
+        if(!uddata.approved){
+          alert('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแล โปรดติดต่อ sptmorral@spt.ac.th');
+          await signOut(auth);
+          renderNav(null);
+          showView('login-view');
+          return;
+        }
+        // allowed user
+        renderNav(u);
+        loadDashboard();
+        showView('dashboard-view');
+        bindRealtime();
+      } else {
+        renderNav(null);
+        showView('login-view');
+      }
+    });
+
+    // Register
+    async function handleRegister(e){
+      e.preventDefault();
+      const prefix = $('#reg-prefix').value.trim();
+      const fname = $('#reg-first').value.trim();
+      const lname = $('#reg-last').value.trim();
+      const email = $('#reg-email').value.trim();
+      const pass = $('#reg-pass').value;
+      if(!prefix||!fname||!lname||!email||!pass){ alert('กรอกข้อมูลให้ครบ'); return; }
+      try{
+        const cred = await createUserWithEmailAndPassword(auth,email,pass);
+        const uid = cred.user.uid;
+        await setDoc(doc(db,'users',uid),{
+          prefix, firstName:fname, lastName:lname, email, role:'member', approved:false, createdAt:serverTimestamp()
+        });
+        alert('ลงทะเบียนเรียบร้อยแล้ว โปรดรอการอนุมัติจากผู้ดูแล (sptmorral@spt.ac.th)');
+        $('#reg-form').reset();
+        showView('login-view');
+      }catch(err){
+        alert('เกิดข้อผิดพลาด: '+err.message);
+      }
+    }
+
+    // Login
+    async function handleLogin(e){
+      e.preventDefault();
+      const email = $('#login-email').value.trim();
+      const pass = $('#login-pass').value;
+      try{
+        await signInWithEmailAndPassword(auth,email,pass);
+        // onAuthStateChanged will handle the rest
+      }catch(err){
+        alert('เข้าสู่ระบบล้มเหลว: '+err.message);
+      }
+    }
+
+    // Logout
+    async function logout(){
+      await signOut(auth);
+      renderNav(null);
+      showView('login-view');
+    }
+
+    // Password reset
+    async function resetPassword(){
+      const email = prompt('ป้อนอีเมลที่ต้องการรีเซ็ตรหัสผ่าน:');
+      if(!email) return;
+      try{
+        await sendPasswordResetEmail(auth,email);
+        alert('ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว');
+      }catch(e){ alert('เกิดข้อผิดพลาด: '+e.message) }
+    }
+
+    // UI rendering of nav/header
+    function renderNav(user){
+      const headerEl = $('#header-user');
+      if(!user){
+        headerEl.innerHTML = `<div class="row"><button class="btn primary" onclick="showView('login-view')">เข้าสู่ระบบ</button><button class="btn ghost" onclick="showView('register-view')">ลงทะเบียน</button></div>`;
+      } else {
+        headerEl.innerHTML = `<div class="row" style="align-items:center;gap:12px">
+          <div style="text-align:right">
+            <div style="font-weight:700">${user.email}</div>
+            <div class="muted" style="font-size:13px">ผู้ใช้</div>
+          </div>
+          <div>
+            <button class="btn" onclick="resetPassword()">แก้ไขรหัสผ่าน</button>
+            <button class="btn" onclick="logout()">ออกจากระบบ</button>
+          </div>
+        </div>`;
+      }
+    }
+
+    // Navigation buttons behavior
+    function bindNav(){
+      qs('nav button[data-view]').forEach(btn=>{
+        btn.addEventListener('click',()=>{ showView(btn.dataset.view); if(btn.dataset.view==='dashboard-view') loadDashboard(); if(btn.dataset.view==='events-view') loadEvents(); if(btn.dataset.view==='links-view') loadLinks(); if(btn.dataset.view==='docs-view') loadDocs(); if(btn.dataset.view==='devices-view') loadDevices(); if(btn.dataset.view==='calendar-view') loadCalendar(); if(btn.dataset.view==='admin-view') loadAdmin(); });
+      });
+    }
+
+    // ---- Data functions ----
+    async function addEvent(formId){
+      const form = document.getElementById(formId);
+      const title = form['title'].value.trim();
+      const startDate = form['startDate'].value;
+      const startTime = form['startTime'].value||'00:00';
+      const endDate = form['endDate'].value||startDate;
+      const endTime = form['endTime'].value||startTime;
+      const allDay = form['allDay'].checked;
+      const details = form['details'].value;
+      if(!title || !startDate){ alert('กรอกชื่อกิจกรรมและวันที่เริ่ม'); return; }
+      try{
+        await addDoc(collection(db,'events'),{
+          title, startDate, startTime, endDate, endTime, allDay, details, status:'pending', createdBy: state.user.uid, createdAt: serverTimestamp()
+        });
+        alert('เพิ่มกิจกรรมแล้ว รอการอนุมัติจากผู้ดูแล');
+        form.reset();
+        loadEvents();
+      }catch(e){ alert(e.message) }
+    }
+
+    async function addLink(){
+      const title = $('#link-title').value.trim(), href = $('#link-href').value.trim(), details = $('#link-details').value.trim();
+      if(!title||!href){ alert('กรอกชื่อและลิงก์'); return; }
+      await addDoc(collection(db,'links'),{title, href, details, status:'pending', createdBy: state.user.uid, createdAt: serverTimestamp()});
+      alert('ส่งคำขอเพิ่มลิงก์แล้ว รอการอนุมัติ');
+      $('#link-form').reset();
+      loadLinks();
+    }
+
+    async function addDocItem(){
+      const title = $('#doc-title').value.trim(), href = $('#doc-href').value.trim(), details = $('#doc-details').value.trim();
+      if(!title||!href){ alert('กรอกชื่อและลิงก์'); return; }
+      await addDoc(collection(db,'docs'),{title, href, details, status:'pending', createdBy: state.user.uid, createdAt: serverTimestamp()});
+      alert('ส่งคำขอเพิ่มเอกสารแล้ว รอการอนุมัติ');
+      $('#doc-form').reset();
+      loadDocs();
+    }
+
+    // Devices add & borrow & return
+    async function addDevice(){
+      const name = $('#device-name').value.trim(), qty = Number($('#device-qty').value);
+      if(!name||!qty){ alert('กรอกชื่อและจำนวน'); return; }
+      await addDoc(collection(db,'devices'),{name, qty, available: qty, createdAt: serverTimestamp()});
+      alert('เพิ่มอุปกรณ์แล้ว');
+      $('#device-form').reset();
+      loadDevices();
+    }
+    async function borrowDevice(id){
+      // create borrow record; reduce available in device doc
+      const d = await getDoc(doc(db,'devices',id));
+      if(!d.exists()) return alert('ไม่พบอุปกรณ์');
+      const data = d.data();
+      if(data.available<=0) return alert('อุปกรณ์หมด');
+      // add borrow record (pending? we let immediate borrow but will be tracked; admin can force return)
+      await addDoc(collection(db,'borrows'),{deviceId:id, deviceName:data.name, userId:state.user.uid, userEmail:state.user.email, status:'borrowed', createdAt: serverTimestamp()});
+      await updateDoc(doc(db,'devices',id),{available: data.available - 1});
+      alert('ยืมอุปกรณ์สำเร็จ');
+      loadDevices();
+    }
+    async function returnBorrow(bid){
+      const br = await getDoc(doc(db,'borrows',bid));
+      if(!br.exists()) return;
+      const bdata = br.data();
+      await updateDoc(doc(db,'borrows',bid),{status:'returned', returnedAt: serverTimestamp()});
+      // increase device available
+      const dref = doc(db,'devices', bdata.deviceId);
+      const dsnap = await getDoc(dref);
+      if(dsnap.exists()) await updateDoc(dref,{available: (dsnap.data().available||0) + 1});
+      alert('คืนอุปกรณ์เรียบร้อย');
+      loadDevices();
+    }
+
+    // Admin approve functions
+    async function adminApprove(collectionName, docId){
+      await updateDoc(doc(db,collectionName,docId),{status:'approved', approvedAt: serverTimestamp()});
+      // special: if approving user account in 'users' collection, set approved: true
+      if(collectionName==='users'){
+        await updateDoc(doc(db,'users',docId),{approved:true});
+        alert('อนุมัติผู้ใช้งานแล้ว');
+      } else {
+        alert('อนุมัติแล้ว');
+      }
+      loadAdmin();
+      loadDashboard();
+    }
+    async function adminDelete(collectionName, docId){
+      if(!confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) return;
+      // Firestore delete requires import; use generic
+      const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+      await deleteDoc(doc(db,collectionName,docId));
+      alert('ลบเรียบร้อย');
+      loadAdmin();
+      loadDashboard();
+    }
+    async function adminForceReturnBorrow(borrowId){
+      const br = await getDoc(doc(db,'borrows',borrowId));
+      if(!br.exists()) return alert('ไม่พบรายการยืม');
+      const data = br.data();
+      if(data.status==='returned') return alert('คืนแล้ว');
+      // mark returned and increment available
+      await updateDoc(doc(db,'borrows',borrowId),{status:'returned', returnedAt: serverTimestamp(), forcedReturn:true});
+      const devRef = doc(db,'devices', data.deviceId);
+      const ds = await getDoc(devRef);
+      if(ds.exists()) await updateDoc(devRef,{available: (ds.data().available||0) + 1});
+      alert('บังคับคืนสำเร็จ');
+      loadAdmin();
+      loadDevices();
+    }
+
+    // ----- Loading and rendering lists -----
+    async function loadDashboard(){
+      // show upcoming events (approved)
+      const eventsQ = query(collection(db,'events'), where('status','==','approved'));
+      const qsnap = await getDocs(eventsQ);
+      const upcoming = [];
+      qsnap.forEach(d=> upcoming.push({id:d.id,...d.data()}));
+      const upcomingList = $('#upcoming-list');
+      upcomingList.innerHTML = upcoming.slice(0,6).map(ev=>`<div class="item">${ev.title}<div class="muted">${ev.startDate} ${ev.startTime}${ev.allDay? ' (ตลอดวัน)':''}</div></div>`).join('');
+      // latest links
+      const linksQ = query(collection(db,'links'), where('status','==','approved'), orderBy('createdAt','desc'));
+      const linksSnap = await getDocs(linksQ);
+      $('#latest-links').innerHTML = linksSnap.docs.slice(0,6).map(d=>`<div class="item"><a href="${d.data().href}" target="_blank">${d.data().title}</a><div class="muted">${d.data().details||''}</div></div>`).join('');
+      // latest docs
+      const docsQ = query(collection(db,'docs'), where('status','==','approved'), orderBy('createdAt','desc'));
+      const docsSnap = await getDocs(docsQ);
+      $('#latest-docs').innerHTML = docsSnap.docs.slice(0,6).map(d=>`<div class="item"><a href="${d.data().href}" target="_blank">${d.data().title}</a><div class="muted">${d.data().details||''}</div></div>`).join('');
+      // device status
+      const devs = await getDocs(collection(db,'devices'));
+      $('#device-status').innerHTML = devs.docs.map(d=>`<div class="item"><div><strong>${d.data().name}</strong><div class="muted">พร้อมใช้: ${d.data().available || 0} / ทั้งหมด: ${d.data().qty || 0}</div></div></div>`).join('');
+    }
+
+    async function loadEvents(){
+      const q = query(collection(db,'events'), orderBy('createdAt','desc'));
+      const snap = await getDocs(q);
+      const list = $('#events-list');
+      list.innerHTML = snap.docs.map(d=>{
+        const data = d.data();
+        const badge = data.status==='pending' ? '<span class="chip">รออนุมัติ</span>':'<span class="chip">อนุมัติ</span>';
+        return `<div class="item"><div><strong>${data.title}</strong> ${badge}<div class="muted">${data.startDate} ${data.startTime} → ${data.endDate} ${data.endTime}${data.allDay? ' | ตลอดวัน':''}</div><div class="muted">${data.details||''}</div></div>
+        ${state.user && state.user.email==='sptmorral@spt.ac.th' && data.status==='pending'? `<div><button class="btn primary" onclick="adminApprove('events','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('events','${d.id}')">ลบ</button></div>`:''}
+        </div>`;
+      }).join('');
+    }
+
+    async function loadLinks(){
+      const q = query(collection(db,'links'), orderBy('createdAt','desc'));
+      const snap = await getDocs(q);
+      $('#links-list').innerHTML = snap.docs.map(d=>{
+        const data=d.data();
+        return `<div class="item"><div><strong><a href="${data.href}" target="_blank">${data.title}</a></strong><div class="muted">${data.details||''}</div></div>
+        ${state.user && state.user.email==='sptmorral@spt.ac.th' && data.status==='pending'? `<div><button class="btn primary" onclick="adminApprove('links','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('links','${d.id}')">ลบ</button></div>`:''}
+        </div>`;
+      }).join('');
+    }
+
+    async function loadDocs(){
+      const q = query(collection(db,'docs'), orderBy('createdAt','desc'));
+      const snap = await getDocs(q);
+      $('#docs-list').innerHTML = snap.docs.map(d=>{
+        const data=d.data();
+        return `<div class="item"><div><strong><a href="${data.href}" target="_blank">${data.title}</a></strong><div class="muted">${data.details||''}</div></div>
+        ${state.user && state.user.email==='sptmorral@spt.ac.th' && data.status==='pending'? `<div><button class="btn primary" onclick="adminApprove('docs','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('docs','${d.id}')">ลบ</button></div>`:''}
+        </div>`;
+      }).join('');
+    }
+
+    async function loadDevices(){
+      const ds = await getDocs(collection(db,'devices'));
+      const bor = await getDocs(collection(db,'borrows'));
+      const availHtml = ds.docs.map(d=>`<div class="item"><div><strong>${d.data().name}</strong><div class="muted">พร้อม: ${d.data().available||0}</div></div><div><button class="btn primary" onclick="borrowDevice('${d.id}')">ยืม</button></div></div>`).join('');
+      const borrowedHtml = bor.docs.map(b=>`<div class="item"><div><strong>${b.data().deviceName}</strong><div class="muted">ผู้ยืม: ${b.data().userEmail} | สถานะ: ${b.data().status}</div></div>
+        <div>${(b.data().userId===state.user.uid || state.user.email==='sptmorral@spt.ac.th') && b.data().status==='borrowed' ? `<button class="btn" onclick="returnBorrow('${b.id}')">คืน</button>`:''}</div>
+      </div>`).join('');
+      $('#devices-available').innerHTML = availHtml || '<div class="muted">ไม่มีอุปกรณ์</div>';
+      $('#devices-borrowed').innerHTML = borrowedHtml || '<div class="muted">ยังไม่มีการยืม</div>';
+    }
+
+    // returnBorrow wrapper that checks ownership
+    async function returnBorrow(bid){
+      const br = await getDoc(doc(db,'borrows',bid));
+      if(!br.exists()) return;
+      const data = br.data();
+      if(state.user.email !== 'sptmorral@spt.ac.th' && data.userId !== state.user.uid) return alert('ไม่มีสิทธิ์คืนรายการนี้');
+      await returnBorrowCore(bid);
+    }
+    async function returnBorrowCore(bid){
+      const { updateDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+      await updateDoc(doc(db,'borrows',bid),{status:'returned', returnedAt: serverTimestamp()});
+      const br = await getDoc(doc(db,'borrows',bid));
+      const bdata = br.data();
+      const dref = doc(db,'devices', bdata.deviceId);
+      const ds = await getDoc(dref);
+      if(ds.exists()) await updateDoc(dref,{available: (ds.data().available||0) + 1});
+      alert('คืนอุปกรณ์เรียบร้อย');
+      loadDevices();
+    }
+
+    // Admin area: list pending requests grouped
+    async function loadAdmin(){
+      if(!state.user || state.user.email!=='sptmorral@spt.ac.th') { $('#admin-area').innerHTML = '<div class="muted">เฉพาะผู้ดูแลเท่านั้น</div>'; return; }
+      // pending users
+      const usersSnap = await getDocs(query(collection(db,'users')));
+      const pendingUsers = usersSnap.docs.filter(d=>!d.data().approved);
+      $('#admin-users').innerHTML = pendingUsers.map(d=>`<div class="item"><div><strong>${d.data().prefix||''} ${d.data().firstName||''} ${d.data().lastName||''}</strong><div class="muted">${d.data().email}</div></div><div><button class="btn primary" onclick="adminApprove('users','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('users','${d.id}')">ลบ</button></div></div>`).join('') || '<div class="muted">ไม่มีคำขอผู้ใช้งาน</div>';
+      // pending events/links/docs
+      const pendingEvents = (await getDocs(query(collection(db,'events'), where('status','==','pending')))).docs;
+      $('#admin-events').innerHTML = pendingEvents.map(d=>`<div class="item"><div><strong>${d.data().title}</strong><div class="muted">${d.data().startDate}</div></div><div><button class="btn primary" onclick="adminApprove('events','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('events','${d.id}')">ลบ</button></div></div>`).join('') || '<div class="muted">ไม่มีคำขอกิจกรรม</div>';
+      const pendingLinks = (await getDocs(query(collection(db,'links'), where('status','==','pending')))).docs;
+      $('#admin-links').innerHTML = pendingLinks.map(d=>`<div class="item"><div><strong>${d.data().title}</strong></div><div><button class="btn primary" onclick="adminApprove('links','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('links','${d.id}')">ลบ</button></div></div>`).join('') || '<div class="muted">ไม่มีคำขอลิงก์</div>';
+      const pendingDocs = (await getDocs(query(collection(db,'docs'), where('status','==','pending')))).docs;
+      $('#admin-docs').innerHTML = pendingDocs.map(d=>`<div class="item"><div><strong>${d.data().title}</strong></div><div><button class="btn primary" onclick="adminApprove('docs','${d.id}')">อนุมัติ</button><button class="btn" onclick="adminDelete('docs','${d.id}')">ลบ</button></div></div>`).join('') || '<div class="muted">ไม่มีคำขอเอกสาร</div>';
+      // devices list
+      const devicesSnap = await getDocs(collection(db,'devices'));
+      $('#admin-devices').innerHTML = devicesSnap.docs.map(d=>`<div class="item"><div><strong>${d.data().name}</strong><div class="muted">ทั้งหมด: ${d.data().qty||0} | พร้อม: ${d.data().available||0}</div></div><div><button class="btn" onclick="adminDelete('devices','${d.id}')">ลบ</button></div></div>`).join('') || '<div class="muted">ไม่มีอุปกรณ์</div>';
+      // borrowed list
+      const borSnap = await getDocs(collection(db,'borrows'));
+      $('#admin-borrows').innerHTML = borSnap.docs.map(b=>`<div class="item"><div><strong>${b.data().deviceName}</strong><div class="muted">ผู้ยืม: ${b.data().userEmail} | สถานะ: ${b.data().status}</div></div><div><button class="btn" onclick="adminForceReturnBorrow('${b.id}')">บังคับคืน</button></div></div>`).join('') || '<div class="muted">ยังไม่มีการยืม</div>';
+    }
+
+    // Calendar simple rendering: show events from approved events
+    async function loadCalendar(){
+      const q = query(collection(db,'events'), where('status','==','approved'), orderBy('startDate','desc'));
+      const snap = await getDocs(q);
+      $('#calendar-list').innerHTML = snap.docs.map(d=>{
+        const data = d.data();
+        return `<div class="item"><div><strong>${data.title}</strong><div class="muted">${data.startDate} ${data.startTime} → ${data.endDate} ${data.endTime}${data.allDay? ' | ตลอดวัน':''}</div></div></div>`;
+      }).join('') || '<div class="muted">ยังไม่มีเหตุการณ์</div>';
+    }
+
+    // Realtime bind (simple snapshot listeners for quick UI update)
+    function bindRealtime(){
+      // subscribe to approved items to update dashboard quickly
+      onSnapshot(query(collection(db,'events')), ()=>loadDashboard());
+      onSnapshot(query(collection(db,'links')), ()=>loadDashboard());
+      onSnapshot(query(collection(db,'docs')), ()=>loadDashboard());
+      onSnapshot(query(collection(db,'devices')), ()=>loadDashboard());
+    }
+
+    // initial binder after DOM loaded
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.getElementById('login-form').addEventListener('submit', handleLogin);
+      document.getElementById('reg-form').addEventListener('submit', handleRegister);
+      document.getElementById('event-create-form').addEventListener('submit', (e)=>{ e.preventDefault(); addEvent('event-create-form') });
+      document.getElementById('link-form').addEventListener('submit', (e)=>{ e.preventDefault(); addLink() });
+      document.getElementById('doc-form').addEventListener('submit', (e)=>{ e.preventDefault(); addDocItem() });
+      document.getElementById('device-form').addEventListener('submit', (e)=>{ e.preventDefault(); addDevice() });
+      bindNav();
+      // show login by default
+      showView('login-view');
+    });
+
+    // expose some functions to global for inline onclick usage
+    window.showView = showView;
+    window.adminApprove = adminApprove;
+    window.adminDelete = adminDelete;
+    window.adminForceReturnBorrow = adminForceReturnBorrow;
+    window.borrowDevice = borrowDevice;
+    window.returnBorrow = returnBorrow;
+    window.resetPassword = resetPassword;
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header class="appbar card" role="banner">
+      <div class="logo">
+        <img class="logo-img" src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="SPT Logo">
+        <div>
+          <h1>SPT MORAL SCHOOL • Student Morality Leadership Committee</h1>
+          <div class="muted">โรงเรียนสตรีพัทลุง — ระบบจัดการกิจกรรมและทรัพยากร</div>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <div id="header-user"></div>
+    </header>
+
+    <!-- Views -->
+    <div id="login-view" class="view" style="display:none;margin-top:18px">
+      <div class="card">
+        <h2>เข้าสู่ระบบ</h2>
+        <form id="login-form" style="margin-top:12px">
+          <label>อีเมล</label>
+          <input id="login-email" type="email" placeholder="you@school.ac.th" />
+          <label>รหัสผ่าน</label>
+          <input id="login-pass" type="password" />
+          <div style="margin-top:12px" class="row">
+            <button class="btn primary" type="submit">เข้าสู่ระบบ</button>
+            <button type="button" class="btn" onclick="showView('register-view')">ลงทะเบียน</button>
+          </div>
+          <div style="margin-top:12px" class="muted">ผู้ดูแลระบบ: sptmorral@spt.ac.th</div>
+        </form>
+      </div>
+    </div>
+
+    <div id="register-view" class="view" style="display:none;margin-top:18px">
+      <div class="card">
+        <h2>ลงทะเบียน</h2>
+        <form id="reg-form" style="margin-top:12px">
+          <label>คำนำหน้าชื่อ</label>
+          <select id="reg-prefix" required>
+            <option value="">-- เลือก --</option>
+            <option>เด็กชาย</option>
+            <option>เด็กหญิง</option>
+            <option>นาย</option>
+            <option>นางสาว</option>
+            <option>นาง</option>
+          </select>
+          <label>ชื่อ</label><input id="reg-first" />
+          <label>นามสกุล</label><input id="reg-last" />
+          <label>อีเมล</label><input id="reg-email" type="email" placeholder="student@school.ac.th" />
+          <label>รหัสผ่าน</label><input id="reg-pass" type="password" />
+          <div style="margin-top:12px" class="row">
+            <button class="btn primary" type="submit">ลงทะเบียน</button>
+            <button type="button" class="btn" onclick="showView('login-view')">กลับไปหน้าเข้าสู่ระบบ</button>
+          </div>
+          <div class="muted" style="margin-top:8px">บัญชีจะต้องได้รับการอนุมัติจากผู้ดูแลก่อนเข้าใช้งาน</div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main app (after login) -->
+    <div id="app" style="display:block">
+      <div class="layout">
+        <nav class="sidebar card">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="muted">เมนู</div>
+            <div class="mobile-menu"><button class="btn" onclick="showView('dashboard-view')">🏠</button></div>
+          </div>
+          <ul>
+            <li><button class="menu-item" data-view="dashboard-view">Dashboard</button></li>
+            <li><button class="menu-item" data-view="events-view">กิจกรรม</button></li>
+            <li><button class="menu-item" data-view="calendar-view">ปฏิทิน</button></li>
+            <li><button class="menu-item" data-view="links-view">ลิงก์</button></li>
+            <li><button class="menu-item" data-view="docs-view">เอกสาร</button></li>
+            <li><button class="menu-item" data-view="devices-view">ยืม-คืนอุปกรณ์</button></li>
+            <li><button class="menu-item" data-view="admin-view">จัดการระบบ (ผู้ดูแล)</button></li>
+          </ul>
+          <div style="height:20px"></div>
+          <div class="muted">สีธีม: ขาว — สไตล์ทันสมัย โค้งมน</div>
+        </nav>
+
+        <main>
+          <!-- Dashboard -->
+          <section id="dashboard-view" class="view" style="display:none">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <h3>แดชบอร์ด</h3>
+                <div class="hint">สรุปข้อมูลล่าสุด</div>
+              </div>
+              <div style="margin-top:12px" class="grid-3">
+                <div>
+                  <div class="card" style="margin-bottom:12px">
+                    <h4>ปฏิทิน (กิจกรรม)</h4>
+                    <div id="upcoming-list" style="margin-top:8px"></div>
+                  </div>
+                  <div class="card">
+                    <h4>ลิงก์ล่าสุด</h4>
+                    <div id="latest-links" style="margin-top:8px"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="card" style="margin-bottom:12px">
+                    <h4>สถานะอุปกรณ์</h4>
+                    <div id="device-status" style="margin-top:8px"></div>
+                  </div>
+                  <div class="card">
+                    <h4>เอกสารล่าสุด</h4>
+                    <div id="latest-docs" style="margin-top:8px"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Events -->
+          <section id="events-view" class="view" style="display:none">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <h3>กิจกรรม</h3>
+                <div class="muted">ทุกคนสามารถส่งคำขอกิจกรรมได้ (รออนุมัติ)</div>
+              </div>
+              <div style="margin-top:12px" class="small-grid">
+                <div class="card">
+                  <h4>เพิ่มกิจกรรม</h4>
+                  <form id="event-create-form">
+                    <label>ชื่อกิจกรรม</label><input name="title" />
+                    <label>วันที่เริ่ม</label><input name="startDate" type="date" />
+                    <label>เวลาที่เริ่ม</label><input name="startTime" type="time" />
+                    <label>วันที่สิ้นสุด</label><input name="endDate" type="date" />
+                    <label>เวลาสิ้นสุด</label><input name="endTime" type="time" />
+                    <label><input name="allDay" type="checkbox" /> ตลอดทั้งวัน</label>
+                    <label>รายละเอียด</label><textarea name="details"></textarea>
+                    <div style="margin-top:8px"><button class="btn primary" type="submit">ส่งคำขอ</button></div>
+                  </form>
+                </div>
+                <div class="card">
+                  <h4>รายการกิจกรรม</h4>
+                  <div id="events-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Calendar -->
+          <section id="calendar-view" class="view" style="display:none">
+            <div class="card">
+              <h3>ปฏิทิน</h3>
+              <div class="muted">แสดงกิจกรรมที่อนุมัติแล้ว</div>
+              <div id="calendar-list" style="margin-top:12px"></div>
+            </div>
+          </section>
+
+          <!-- Links -->
+          <section id="links-view" class="view" style="display:none">
+            <div class="card">
+              <h3>ลิงก์</h3>
+              <div class="small-grid" style="margin-top:12px">
+                <div class="card">
+                  <h4>เพิ่มลิงก์</h4>
+                  <form id="link-form">
+                    <label>ชื่อลิงก์</label><input id="link-title" />
+                    <label>ลิงก์</label><input id="link-href" placeholder="https://..." />
+                    <label>รายละเอียด</label><textarea id="link-details"></textarea>
+                    <div style="margin-top:8px"><button class="btn primary" type="submit">ส่งคำขอ</button></div>
+                  </form>
+                </div>
+                <div class="card">
+                  <h4>รายการลิงก์</h4>
+                  <div id="links-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Documents -->
+          <section id="docs-view" class="view" style="display:none">
+            <div class="card">
+              <h3>เอกสาร</h3>
+              <div class="small-grid" style="margin-top:12px">
+                <div class="card">
+                  <h4>เพิ่มเอกสาร</h4>
+                  <form id="doc-form">
+                    <label>ชื่อเอกสาร</label><input id="doc-title" />
+                    <label>ลิงก์</label><input id="doc-href" placeholder="https://..." />
+                    <label>รายละเอียด</label><textarea id="doc-details"></textarea>
+                    <div style="margin-top:8px"><button class="btn primary" type="submit">ส่งคำขอ</button></div>
+                  </form>
+                </div>
+                <div class="card">
+                  <h4>รายการเอกสาร</h4>
+                  <div id="docs-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Devices borrow/return -->
+          <section id="devices-view" class="view" style="display:none">
+            <div class="card">
+              <h3>ยืม - คืนอุปกรณ์</h3>
+              <div class="small-grid" style="margin-top:12px">
+                <div class="card">
+                  <h4>อุปกรณ์คงเหลือ</h4>
+                  <div id="devices-available"></div>
+                </div>
+                <div class="card">
+                  <h4>อุปกรณ์ที่ยืม</h4>
+                  <div id="devices-borrowed"></div>
+                </div>
+              </div>
+
+              <div style="margin-top:12px" class="card">
+                <h4>เพิ่มอุปกรณ์ (ผู้ดูแล)</h4>
+                <form id="device-form">
+                  <label>ชื่ออุปกรณ์</label><input id="device-name" />
+                  <label>จำนวน</label><input id="device-qty" type="number" value="1" />
+                  <div style="margin-top:8px"><button class="btn primary" type="submit">เพิ่ม</button></div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- Admin -->
+          <section id="admin-view" class="view" style="display:none">
+            <div class="card">
+              <h3>หน้าจัดการระบบ (ผู้ดูแล)</h3>
+              <div class="muted">เฉพาะผู้ใช้ที่เป็นผู้ดูแล (sptmorral@spt.ac.th)</div>
+              <div style="margin-top:12px" class="small-grid">
+                <div class="card">
+                  <h4>คำขออนุมัติผู้ใช้งาน</h4>
+                  <div id="admin-users"></div>
+                </div>
+                <div class="card">
+                  <h4>คำขอกิจกรรม</h4>
+                  <div id="admin-events"></div>
+                </div>
+                <div class="card">
+                  <h4>คำขอลิงก์</h4>
+                  <div id="admin-links"></div>
+                </div>
+                <div class="card">
+                  <h4>คำขอเอกสาร</h4>
+                  <div id="admin-docs"></div>
+                </div>
+                <div class="card">
+                  <h4>อุปกรณ์</h4>
+                  <div id="admin-devices"></div>
+                </div>
+                <div class="card">
+                  <h4>รายการยืม</h4>
+                  <div id="admin-borrows"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+
+    <footer>&copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved</footer>
+
+  </div>
+</body>
+</html>
