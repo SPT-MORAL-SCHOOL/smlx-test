@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPT MORAL - STUDENT MORALITY LEADERSHIP COMMITTEE (LIVE FIRESTORE)</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/th.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* --- CSS Styling (Modern, Clean, White, Responsive) --- */
+        :root {
+            --primary-color: #4a90e2; /* Blue */
+            --secondary-color: #6a1b9a; /* Purple */
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --border-radius: 12px;
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+        body { background-color: var(--background-color); color: var(--text-color); line-height: 1.6; }
+
+        /* Header / Navigation */
+        .header { background-color: var(--card-background); box-shadow: var(--shadow-light); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .logo-container { display: flex; align-items: center; }
+        /* Use the actual logo image */
+        .logo { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; object-fit: cover; }
+        .app-title { font-size: 1.2rem; font-weight: 600; color: var(--secondary-color); white-space: nowrap; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: var(--text-color); padding: 8px 15px; border-radius: 8px; transition: background-color 0.3s; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { background-color: rgba(74, 144, 226, 0.1); color: var(--primary-color); }
+        .auth-actions { display: flex; gap: 10px; }
+        
+        /* Buttons */
+        .btn { padding: 10px 18px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #3a7fd5; transform: translateY(-1px); }
+        .btn-secondary { background-color: #ccc; color: var(--text-color); }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-danger:hover { background-color: #c0392b; }
+
+        /* Main Layout */
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .app-page { display: none; }
+        
+        h2, h3 { color: var(--primary-color); margin-bottom: 15px; border-bottom: 2px solid rgba(74, 144, 226, 0.1); padding-bottom: 5px; }
+
+        /* Forms */
+        .form-card { max-width: 450px; margin: 50px auto; padding: 30px; background-color: var(--card-background); border-radius: var(--border-radius); box-shadow: var(--shadow-md); text-align: center; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); outline: none; }
+
+        /* Dashboard & Lists */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background-color: var(--card-background); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
+        .card h4 { color: var(--secondary-color); margin-bottom: 15px; font-size: 1.1rem; }
+        .list-item { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .list-item:last-child { border-bottom: none; }
+        .list-actions { display: flex; gap: 5px; }
+        
+        /* Equipment Layout */
+        .equipment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        @media (max-width: 900px) {
+            .equipment-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Tables (Clean & Rounded) */
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; }
+        .data-table th { background-color: var(--primary-color); color: white; font-weight: 600; }
+        .data-table tbody tr { background-color: var(--card-background); box-shadow: var(--shadow-light); border-radius: var(--border-radius); transition: transform 0.2s; }
+        .data-table tbody tr:hover { transform: translateY(-2px); }
+
+        /* Calendar Mockup (Simple view for dashboard) */
+        .calendar-mockup { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 15px; }
+        .calendar-day-header, .calendar-day { padding: 8px 5px; text-align: center; border-radius: 6px; }
+        .calendar-day-header { background-color: var(--secondary-color); color: white; font-weight: 600; font-size: 0.8rem; }
+        .calendar-day { background-color: #f1f1f1; position: relative; font-weight: 600; font-size: 0.9rem; }
+        .event-dot { width: 6px; height: 6px; border-radius: 50%; position: absolute; bottom: 3px; right: 3px; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--card-background); margin: 10% auto; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow-md); width: 90%; max-width: 600px; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
+
+        /* Responsive Design */
+        .menu-icon { display: none; cursor: pointer; font-size: 1.5rem; color: var(--primary-color); }
+        @media (max-width: 768px) {
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; width: 100%; background-color: var(--card-background); box-shadow: var(--shadow-md); padding: 10px 0; }
+            .nav-links.active { display: flex; }
+            .nav-links a { padding: 10px 20px; border-radius: 0; }
+            .menu-icon { display: block; }
+            .auth-actions { display: none; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAOgu5-F-iLrFdPjJ0QW2BxorG-SNtZOKk",
+            authDomain: "smlc-30912.firebaseapp.com",
+            projectId: "smlc-30912",
+            storageBucket: "smlc-30912.firebasestorage.app",
+            messagingSenderId: "264699595987",
+            appId: "1:264699595987:web:3a0388e5aa87397b5e1826",
+            measurementId: "G-35KJ6PSQFW"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        const ADMIN_EMAIL = 'sptmorral@spt.ac.th';
+        let currentUser = null;
+        let currentUserProfile = null;
+        let isAdministrator = false; 
+
+        // Set locale for moment.js
+        moment.locale('th');
+
+        // Utility: Format date/time
+        function formatDateTime(dateStr, timeStr, isAllDay) {
+            if (isAllDay) return moment(dateStr, 'YYYY-MM-DD').format('D MMM YYYY') + ' (ตลอดวัน)';
+            return moment(`${dateStr} ${timeStr}`, 'YYYY-MM-DD HH:mm').format('D MMM YYYY, HH:mm น.');
+        }
+
+        // --- Core Authentication and State Management ---
+        
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            if (user) {
+                try {
+                    const doc = await db.collection('users').doc(user.uid).get();
+                    currentUserProfile = doc.exists ? doc.data() : null;
+                    
+                    // Check Admin Status and Approval
+                    isAdministrator = currentUserProfile && currentUserProfile.isAdmin === true;
+                    
+                    if (!currentUserProfile || currentUserProfile.isApproved !== true) {
+                        await auth.signOut(); // Log out unapproved users
+                        alert('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ หรือข้อมูลโปรไฟล์ไม่สมบูรณ์');
+                        currentUser = null;
+                        currentUserProfile = null;
+                    }
+                } catch (e) {
+                    console.error("Error fetching user profile:", e);
+                    await auth.signOut();
+                    alert('เกิดข้อผิดพลาดในการโหลดโปรไฟล์');
+                    currentUser = null;
+                }
+            }
+            updateUI();
+        });
+
+        async function updateUI() {
+            const loginPage = document.getElementById('login-page');
+            const mainApp = document.getElementById('main-app');
+            const navLinks = document.getElementById('nav-links');
+            const authActions = document.getElementById('auth-actions');
+
+            if (currentUser) {
+                loginPage.style.display = 'none';
+                mainApp.style.display = 'block';
+
+                navLinks.innerHTML = `
+                    <a href="#" onclick="showPage('dashboard')" class="active"><i class="fas fa-home"></i> หน้าหลัก</a>
+                    <a href="#" onclick="showPage('activities')"><i class="fas fa-calendar-check"></i> กิจกรรม</a>
+                    <a href="#" onclick="showPage('links')"><i class="fas fa-link"></i> ลิงก์</a>
+                    <a href="#" onclick="showPage('documents')"><i class="fas fa-file-alt"></i> เอกสาร</a>
+                    <a href="#" onclick="showPage('equipment')"><i class="fas fa-laptop"></i> ยืม-คืนอุปกรณ์</a>
+                    <a href="#" onclick="showPage('calendar')"><i class="fas fa-calendar-alt"></i> ปฏิทิน</a>
+                    ${isAdministrator ? '<a href="#" onclick="showPage(\'admin\')" class="admin-link"><i class="fas fa-cog"></i> จัดการระบบ</a>' : ''}
+                `;
+
+                authActions.innerHTML = `
+                    <button class="btn btn-secondary" onclick="showPage('change-password')">แก้ไขรหัสผ่าน</button>
+                    <button class="btn btn-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+                `;
+                
+                showPage('dashboard');
+            } else {
+                loginPage.style.display = 'block';
+                mainApp.style.display = 'none';
+                
+                navLinks.innerHTML = `
+                    <a href="#" onclick="showLoginPage()">เข้าสู่ระบบ</a>
+                    <a href="#" onclick="showRegisterPage()">ลงทะเบียน</a>
+                `;
+                authActions.innerHTML = '';
+            }
+            document.getElementById('nav-links').classList.remove('active');
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.app-page').forEach(page => { page.style.display = 'none'; });
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+                // Trigger content rendering
+                if (pageId === 'dashboard') renderDashboard();
+                if (pageId === 'activities') renderActivities();
+                if (pageId === 'links') renderLinks();
+                if (pageId === 'documents') renderDocuments();
+                if (pageId === 'equipment') renderEquipment();
+                if (pageId === 'calendar') renderCalendarPage();
+                if (pageId === 'admin') renderAdminPage();
+                if (pageId === 'change-password') document.getElementById('pass-change-form').reset();
+            }
+            document.querySelectorAll('.nav-links a').forEach(link => { link.classList.remove('active'); });
+            const activeLink = document.querySelector(`.nav-links a[onclick="showPage('${pageId}')"]`);
+            if (activeLink) activeLink.classList.add('active');
+        }
+
+        function showLoginPage() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('form-title').innerText = 'ลงชื่อเข้าใช้งาน';
+        }
+
+        function showRegisterPage() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+            document.getElementById('form-title').innerText = 'ลงทะเบียนบัญชีใหม่';
+        }
+        
+        // --- Login / Register / Logout Handlers ---
+
+        function login(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .catch((error) => {
+                    alert('เข้าสู่ระบบล้มเหลว: ' + error.message);
+                });
+            // State change handled by auth.onAuthStateChanged
+        }
+
+        function register(event) {
+            event.preventDefault();
+            const prefix = document.getElementById('reg-prefix').value;
+            const name = document.getElementById('reg-name').value;
+            const lastname = document.getElementById('reg-lastname').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(async (userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Create user profile in Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        email: email,
+                        name: `${prefix}${name} ${lastname}`,
+                        prefix: prefix,
+                        isAdmin: email === ADMIN_EMAIL ? true : false, // Manual confirmation needed for admin in console
+                        isApproved: email === ADMIN_EMAIL ? true : false, // Auto-approve admin, others wait
+                        uid: user.uid,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    alert('ลงทะเบียนสำเร็จ! กรุณารอผู้ดูแลระบบอนุมัติบัญชีของคุณ');
+                    auth.signOut(); // Force sign out to require approval
+                    showLoginPage();
+                })
+                .catch((error) => {
+                    alert('ลงทะเบียนล้มเหลว: ' + error.message);
+                });
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                currentUser = null;
+                currentUserProfile = null;
+                isAdministrator = false;
+                alert('ออกจากระบบสำเร็จ');
+                updateUI();
+                showLoginPage();
+            }).catch((error) => {
+                alert('เกิดข้อผิดพลาดในการออกจากระบบ: ' + error.message);
+            });
+        }
+        
+        function toggleMenu() {
+            document.getElementById('nav-links').classList.toggle('active');
+        }
+        
+        // --- CRUD/Render Helpers ---
+
+        async function postRequest(collectionName, data) {
+            data.submittedBy = currentUser.email;
+            data.uid = currentUser.uid;
+            data.status = 'pending'; 
+            data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+            
+            return db.collection(collectionName).add(data);
+        }
+
+        async function deleteData(collectionName, docId) {
+             if (!isAdministrator) {
+                 alert('ไม่มีสิทธิ์ในการลบข้อมูล');
+                 return;
+             }
+             if (!confirm('ยืนยันการลบข้อมูลนี้หรือไม่?')) return;
+             
+             try {
+                await db.collection(collectionName).doc(docId).delete();
+                alert('ลบข้อมูลสำเร็จ');
+             } catch(e) {
+                 alert('เกิดข้อผิดพลาดในการลบ: ' + e.message);
+             }
+        }
+
+        async function approveRequest(requestCollection, approvedCollection, docId, data) {
+            if (!isAdministrator) return;
+            data.status = 'approved';
+            
+            try {
+                // Remove pending fields
+                delete data.status;
+                delete data.timestamp;
+
+                // 1. Move/copy to approved collection
+                await db.collection(approvedCollection).add(data);
+                
+                // 2. Remove from request collection
+                await db.collection(requestCollection).doc(docId).delete();
+                
+                alert('อนุมัติรายการสำเร็จ');
+                renderAdminPage();
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการอนุมัติ: ' + e.message);
+            }
+        }
+        
+        // --- 2.2 Dashboard Logic ---
+
+        function renderDashboard() {
+            renderUpcomingEvents();
+            renderEquipmentStatus();
+            renderLatestData('links_approved', 'latest-links', 'ลิงก์ล่าสุด', 2);
+            renderLatestData('documents_approved', 'latest-documents', 'เอกสารล่าสุด', 2);
+        }
+
+        async function renderUpcomingEvents() {
+            const container = document.getElementById('upcoming-events-list');
+            container.innerHTML = 'กำลังโหลด...';
+            
+            const now = moment().format('YYYY-MM-DD');
+
+            // Fetch approved activities and calendars (sorted by date and limited)
+            const activitiesSnap = await db.collection('activities_approved')
+                .where('dateStart', '>=', now)
+                .orderBy('dateStart', 'asc')
+                .orderBy('timeStart', 'asc')
+                .limit(5).get();
+            
+            const calendarsSnap = await db.collection('calendars_approved')
+                .where('dateStart', '>=', now)
+                .orderBy('dateStart', 'asc')
+                .orderBy('timeStart', 'asc')
+                .limit(5).get();
+
+            let allEvents = [];
+            activitiesSnap.forEach(doc => allEvents.push(doc.data()));
+            calendarsSnap.forEach(doc => allEvents.push(doc.data()));
+            
+            // Re-sort to mix and take the top 5
+            allEvents.sort((a, b) => {
+                const dateA = moment(a.dateStart + a.timeStart, 'YYYY-MM-DD HH:mm');
+                const dateB = moment(b.dateStart + b.timeStart, 'YYYY-MM-DD HH:mm');
+                return dateA.valueOf() - dateB.valueOf();
+            });
+            allEvents = allEvents.slice(0, 5);
+
+
+            if (allEvents.length === 0) {
+                container.innerHTML = '<p>ไม่มีกิจกรรม/ประชุมที่กำลังจะมาถึง</p>';
+                document.getElementById('calendar-mockup-days').innerHTML = '<p>ไม่มีกิจกรรมในเดือนนี้</p>';
+                return;
+            }
+
+            container.innerHTML = allEvents.map(event => {
+                const dateTime = formatDateTime(event.dateStart, event.timeStart, event.isAllDay);
+                return `
+                    <div class="list-item">
+                        <span>${event.name}</span>
+                        <span style="font-weight: 600; color: ${event.type === 'calendar' ? 'var(--secondary-color)' : 'var(--primary-color)'};">${dateTime}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            renderCalendarMockup(activitiesSnap, calendarsSnap);
+        }
+        
+        async function renderCalendarMockup(activitiesSnap, calendarsSnap) {
+            const container = document.getElementById('calendar-mockup-days');
+            if (!container) return;
+
+            const today = moment();
+            const startOfMonth = today.clone().startOf('month').startOf('week');
+            const endOfMonth = today.clone().endOf('month').endOf('week');
+            
+            container.innerHTML = '';
+            
+            const eventDates = {}; // { 'YYYY-MM-DD': true }
+
+            activitiesSnap.forEach(doc => {
+                const data = doc.data();
+                if (moment(data.dateStart).isSame(today, 'month')) {
+                    eventDates[data.dateStart] = true;
+                }
+            });
+            calendarsSnap.forEach(doc => {
+                 const data = doc.data();
+                 if (moment(data.dateStart).isSame(today, 'month')) {
+                    eventDates[data.dateStart] = true;
+                }
+            });
+
+            let currentDay = startOfMonth.clone();
+            while (currentDay.isSameOrBefore(endOfMonth, 'day')) {
+                let eventDot = '';
+                const dayStr = currentDay.format('YYYY-MM-DD');
+
+                if (eventDates[dayStr]) {
+                    eventDot = `<div class="event-dot" style="background-color: var(--primary-color);"></div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="calendar-day" style="${currentDay.month() !== today.month() ? 'opacity: 0.5; background-color: #e9e9e9;' : ''} ${currentDay.isSame(today, 'day') ? 'background-color: #ffe082;' : ''}">
+                        ${currentDay.date()}
+                        ${eventDot}
+                    </div>
+                `;
+                currentDay.add(1, 'day');
+            }
+        }
+        
+        async function renderEquipmentStatus() {
+            const container = document.getElementById('equipment-status-list');
+            container.innerHTML = 'กำลังโหลด...';
+            
+            const snapshot = await db.collection('equipment').get();
+            const equipment = [];
+            snapshot.forEach(doc => equipment.push(doc.data()));
+
+            if (equipment.length === 0) {
+                container.innerHTML = '<p>ไม่มีอุปกรณ์ในระบบ</p>';
+                return;
+            }
+
+            container.innerHTML = equipment.map(item => {
+                const remaining = item.total - (item.borrowed || 0);
+                let color = 'green';
+                if (remaining <= item.total * 0.2) color = 'red';
+                else if (remaining <= item.total * 0.5) color = 'orange';
+
+                return `
+                    <div class="list-item">
+                        <span>${item.name}:</span>
+                        <span style="font-weight: 700; color: ${color};">คงเหลือ ${remaining}/${item.total}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function renderLatestData(collectionName, elementId, title, limit) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = 'กำลังโหลด...';
+            
+            const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(limit).get();
+            const items = [];
+            snapshot.forEach(doc => items.push(doc.data()));
+
+            if (items.length === 0) {
+                container.innerHTML = `<p>ไม่มี${title}</p>`;
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const type = collectionName.includes('link') ? 'link' : 'document';
+                const icon = type === 'document' ? 'fa-download' : 'fa-external-link-alt';
+                return `
+                    <div class="list-item">
+                        <strong><a href="${item.link}" target="_blank">${item.name} <i class="fas ${icon}" style="font-size: 0.8em;"></i></a></strong>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- 2.3 Activities Logic ---
+
+        function openActivityModal() {
+            document.getElementById('activity-modal').style.display = 'flex';
+            document.getElementById('activity-form').reset();
+            document.getElementById('activity-all-day').checked = false;
+            document.getElementById('activity-time-group').style.display = 'block';
+        }
+
+        function closeActivityModal() {
+            document.getElementById('activity-modal').style.display = 'none';
+        }
+
+        async function submitActivity(event) {
+            event.preventDefault();
+            const form = event.target;
+            
+            const data = {
+                name: form['act-name'].value,
+                dateStart: form['act-date-start'].value,
+                timeStart: form['act-time-start'].value,
+                dateEnd: form['act-date-end'].value,
+                timeEnd: form['act-time-end'].value,
+                details: form['act-details'].value,
+                isAllDay: form['act-all-day'].checked,
+                type: 'activity',
+            };
+            
+            try {
+                await postRequest('activities_requests', data);
+                alert('ส่งคำขอกิจกรรมสำเร็จ! โปรดรอผู้ดูแลระบบอนุมัติ');
+                closeActivityModal();
+                renderActivities();
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการส่งคำขอ: ' + e.message);
+            }
+        }
+
+        async function renderActivities() {
+            const pendingContainer = document.getElementById('activity-pending-list');
+            const approvedContainer = document.getElementById('activity-approved-list');
+            pendingContainer.innerHTML = 'กำลังโหลด...';
+            approvedContainer.innerHTML = 'กำลังโหลด...';
+
+            const pendingSnap = await db.collection('activities_requests').get();
+            const approvedSnap = await db.collection('activities_approved').orderBy('dateStart', 'asc').get();
+
+            let pendingHtml = '';
+            pendingSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                const dateTime = formatDateTime(item.dateStart, item.timeStart, item.isAllDay);
+                pendingHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small>${dateTime}</small>
+                        </div>
+                        <div class="list-actions">
+                            <span style="color: orange;"><i class="fas fa-clock"></i> รอดำเนินการ</span>
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('activities_requests', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            pendingContainer.innerHTML = pendingHtml || '<p>ไม่มีกิจกรรมที่รออนุมัติ</p>';
+
+            let approvedHtml = '';
+            approvedSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                const dateTime = formatDateTime(item.dateStart, item.timeStart, item.isAllDay);
+                approvedHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small>${dateTime}</small>
+                        </div>
+                        <div class="list-actions">
+                            <span style="color: green;"><i class="fas fa-check-circle"></i> อนุมัติแล้ว</span>
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('activities_approved', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            approvedContainer.innerHTML = approvedHtml || '<p>ไม่มีกิจกรรมที่อนุมัติแล้ว</p>';
+        }
+        
+        // --- 2.4/2.5 Links and Documents Logic (Combined CRUD) ---
+
+        function openResourceModal(type) {
+            document.getElementById('resource-modal-title').innerText = type === 'link' ? 'เพิ่มลิงก์' : 'เพิ่มเอกสาร';
+            document.getElementById('res-type').value = type;
+            document.getElementById('resource-form').reset();
+            document.getElementById('resource-modal').style.display = 'flex';
+        }
+
+        function closeResourceModal() {
+            document.getElementById('resource-modal').style.display = 'none';
+        }
+
+        async function submitResource(event) {
+            event.preventDefault();
+            const form = event.target;
+            const type = form['res-type'].value;
+            const collectionName = type === 'link' ? 'links_requests' : 'documents_requests';
+
+            const data = {
+                name: form['res-name'].value,
+                link: form['res-link'].value,
+                details: form['res-details'].value,
+                type: type,
+            };
+            
+            try {
+                await postRequest(collectionName, data);
+                alert(`ส่งคำขอ${type === 'link' ? 'ลิงก์' : 'เอกสาร'}สำเร็จ! โปรดรอผู้ดูแลระบบอนุมัติ`);
+                closeResourceModal();
+                if (type === 'link') renderLinks(); else renderDocuments();
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการส่งคำขอ: ' + e.message);
+            }
+        }
+        
+        async function renderLinks() {
+            const pendingContainer = document.getElementById('link-pending-list');
+            const approvedContainer = document.getElementById('link-approved-list');
+            await renderResourceLists('links', pendingContainer, approvedContainer);
+        }
+
+        async function renderDocuments() {
+            const pendingContainer = document.getElementById('document-pending-list');
+            const approvedContainer = document.getElementById('document-approved-list');
+            await renderResourceLists('documents', pendingContainer, approvedContainer);
+        }
+        
+        async function renderResourceLists(baseName, pendingContainer, approvedContainer) {
+            pendingContainer.innerHTML = 'กำลังโหลด...';
+            approvedContainer.innerHTML = 'กำลังโหลด...';
+
+            const pendingSnap = await db.collection(`${baseName}_requests`).get();
+            const approvedSnap = await db.collection(`${baseName}_approved`).orderBy('timestamp', 'desc').get();
+            
+            let pendingHtml = '';
+            pendingSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                pendingHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small>${item.details}</small>
+                        </div>
+                        <div class="list-actions">
+                            <span style="color: orange;"><i class="fas fa-clock"></i> รอดำเนินการ</span>
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('${baseName}_requests', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            pendingContainer.innerHTML = pendingHtml || `<p>ไม่มี${baseName === 'links' ? 'ลิงก์' : 'เอกสาร'}ที่รออนุมัติ</p>`;
+
+            let approvedHtml = '';
+            approvedSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                const type = baseName === 'links' ? 'link' : 'document';
+                const icon = type === 'document' ? 'fa-download' : 'fa-external-link-alt';
+                approvedHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong><a href="${item.link}" target="_blank">${item.name} <i class="fas ${icon}" style="font-size: 0.8em;"></i></a></strong><br>
+                            <small>${item.details}</small>
+                        </div>
+                        <div class="list-actions">
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('${baseName}_approved', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            approvedContainer.innerHTML = approvedHtml || `<p>ไม่มี${baseName === 'links' ? 'ลิงก์' : 'เอกสาร'}ที่อนุมัติแล้ว</p>`;
+        }
+        
+        // --- 2.6 Equipment Logic ---
+
+        async function renderEquipment() {
+            const availableTableBody = document.getElementById('available-equipment-body');
+            const borrowedTableBody = document.getElementById('borrowed-equipment-body');
+            availableTableBody.innerHTML = '<tr><td colspan="4">กำลังโหลด...</td></tr>';
+            borrowedTableBody.innerHTML = '<tr><td colspan="5">กำลังโหลด...</td></tr>';
+            
+            const snapshot = await db.collection('equipment').get();
+            const equipmentList = [];
+            snapshot.forEach(doc => {
+                equipmentList.push({ id: doc.id, ...doc.data() });
+            });
+
+            const borrowedSnap = await db.collection('equipment_loans').where('userUid', '==', currentUser.uid).get();
+            const userLoans = [];
+            borrowedSnap.forEach(doc => {
+                userLoans.push({ id: doc.id, ...doc.data() });
+            });
+            
+
+            let availableHtml = '';
+            let borrowedHtml = '';
+            const today = moment().format('YYYY-MM-DD');
+
+            equipmentList.forEach(item => {
+                const currentLoans = userLoans.filter(loan => loan.equipmentId === item.id).length;
+                const totalLoans = item.borrowed || 0;
+                const remaining = item.total - totalLoans;
+                
+                availableHtml += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td style="color: ${remaining > 0 ? 'green' : 'red'}; font-weight: 600;">${remaining}</td>
+                        <td>${item.total}</td>
+                        <td>
+                            ${remaining > 0 ? `<button class="btn btn-primary" onclick="borrowEquipment('${item.id}', '${item.name}')">ยืมอุปกรณ์</button>` : `<button class="btn btn-secondary" disabled>ถูกยืมหมด</button>`}
+                        </td>
+                    </tr>
+                `;
+            });
+            availableTableBody.innerHTML = availableHtml || '<tr><td colspan="4">ไม่มีอุปกรณ์ในระบบ</td></tr>';
+
+            userLoans.forEach(loan => {
+                const equipment = equipmentList.find(e => e.id === loan.equipmentId);
+                const equipmentName = equipment ? equipment.name : 'ไม่พบอุปกรณ์';
+                borrowedHtml += `
+                    <tr>
+                        <td>${equipmentName}</td>
+                        <td>${loan.borrowDate}</td>
+                        <td style="color: ${moment(loan.returnDate).isBefore(today) ? 'red' : 'green'}; font-weight: 600;">${loan.returnDate}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="returnEquipment('${loan.id}', '${loan.equipmentId}')">คืนอุปกรณ์</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            borrowedTableBody.innerHTML = borrowedHtml || '<tr><td colspan="4">ไม่มีอุปกรณ์ที่ยืมอยู่</td></tr>';
+        }
+        
+        function borrowEquipment(equipmentId, equipmentName) {
+            const returnDate = prompt(`ยืมอุปกรณ์: ${equipmentName}\nกรุณาระบุวันที่ต้องการคืน (YYYY-MM-DD):`);
+            if (returnDate && moment(returnDate).isValid()) {
+                const loanData = {
+                    equipmentId: equipmentId,
+                    userUid: currentUser.uid,
+                    userName: currentUserProfile.name,
+                    userEmail: currentUser.email,
+                    borrowDate: moment().format('YYYY-MM-DD'),
+                    returnDate: returnDate
+                };
+                
+                db.collection('equipment_loans').add(loanData)
+                    .then(() => {
+                        // Increment borrowed count using transaction
+                        db.collection('equipment').doc(equipmentId).update({
+                            borrowed: firebase.firestore.FieldValue.increment(1)
+                        });
+                        alert(`ยืม ${equipmentName} สำเร็จ! กำหนดคืน ${returnDate}`);
+                        renderEquipment();
+                    })
+                    .catch(e => alert('ยืมอุปกรณ์ล้มเหลว: ' + e.message));
+            } else if (returnDate) {
+                alert('รูปแบบวันที่ไม่ถูกต้อง (YYYY-MM-DD)');
+            }
+        }
+
+        function returnEquipment(loanId, equipmentId) {
+            if (!confirm('ยืนยันการคืนอุปกรณ์นี้หรือไม่?')) return;
+            
+            db.collection('equipment_loans').doc(loanId).delete()
+                .then(() => {
+                    // Decrement borrowed count using transaction
+                    db.collection('equipment').doc(equipmentId).update({
+                        borrowed: firebase.firestore.FieldValue.increment(-1)
+                    });
+                    alert('คืนอุปกรณ์สำเร็จ');
+                    renderEquipment();
+                })
+                .catch(e => alert('คืนอุปกรณ์ล้มเหลว: ' + e.message));
+        }
+
+        // --- 2.7 Calendar Page Logic ---
+        
+        function openCalendarModal() {
+            document.getElementById('calendar-modal').style.display = 'flex';
+            document.getElementById('calendar-form').reset();
+            document.getElementById('cal-all-day').checked = false;
+            document.getElementById('calendar-time-group').style.display = 'block';
+        }
+
+        function closeCalendarModal() {
+            document.getElementById('calendar-modal').style.display = 'none';
+        }
+
+        async function submitCalendar(event) {
+            event.preventDefault();
+            const form = event.target;
+            
+            const data = {
+                name: form['cal-name'].value,
+                type: form['cal-type'].value,
+                dateStart: form['cal-date-start'].value,
+                timeStart: form['cal-time-start'].value,
+                dateEnd: form['cal-date-end'].value,
+                timeEnd: form['cal-time-end'].value,
+                details: form['cal-details'].value,
+                isAllDay: form['cal-all-day'].checked,
+            };
+            
+            try {
+                await postRequest('calendars_requests', data);
+                alert(`ส่งคำขอปฏิทินสำเร็จ! (ประเภท: ${data.type})`);
+                closeCalendarModal();
+                renderCalendarPage();
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการส่งคำขอ: ' + e.message);
+            }
+        }
+        
+        async function renderCalendarPage() {
+            const pendingContainer = document.getElementById('calendar-pending-list');
+            const approvedContainer = document.getElementById('calendar-approved-list');
+            pendingContainer.innerHTML = 'กำลังโหลด...';
+            approvedContainer.innerHTML = 'กำลังโหลด...';
+            
+            const pendingSnap = await db.collection('calendars_requests').get();
+            const approvedSnap = await db.collection('calendars_approved').orderBy('dateStart', 'asc').get();
+
+            let pendingHtml = '';
+            pendingSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                const dateTime = formatDateTime(item.dateStart, item.timeStart, item.isAllDay);
+                pendingHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${item.name} (${item.type})</strong><br>
+                            <small>${dateTime}</small>
+                        </div>
+                        <div class="list-actions">
+                            <span style="color: orange;"><i class="fas fa-clock"></i> รอดำเนินการ</span>
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('calendars_requests', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            pendingContainer.innerHTML = pendingHtml || '<p>ไม่มีรายการปฏิทินที่รออนุมัติ</p>';
+
+            let approvedHtml = '';
+            approvedSnap.forEach(doc => {
+                const item = doc.data();
+                const key = doc.id;
+                const dateTime = formatDateTime(item.dateStart, item.timeStart, item.isAllDay);
+                approvedHtml += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${item.name} (${item.type})</strong><br>
+                            <small>${dateTime}</small>
+                        </div>
+                        <div class="list-actions">
+                            <span style="color: green;"><i class="fas fa-check-circle"></i> อนุมัติแล้ว</span>
+                            ${isAdministrator ? `<button class="btn btn-danger" onclick="deleteData('calendars_approved', '${key}')"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            approvedContainer.innerHTML = approvedHtml || '<p>ไม่มีรายการปฏิทินที่อนุมัติแล้ว</p>';
+        }
+
+        // --- 2.8 Admin Panel Logic ---
+        
+        async function renderAdminPage() {
+            if (!isAdministrator) { showPage('dashboard'); return; }
+            renderAdminUserManagement();
+            renderAdminEquipmentManagement();
+            renderAdminApprovalRequests();
+        }
+
+        async function renderAdminApprovalRequests() {
+            const collections = {
+                'users': { ref: 'users', type: 'user', title: 'คำขออนุมัติผู้ใช้งาน', action: 'approveUser', statusKey: 'isApproved', statusValue: false },
+                'activities_requests': { ref: 'activities_requests', type: 'activity', title: 'คำขอเพิ่มกิจกรรม', action: 'approveActivity', statusKey: 'status', statusValue: 'pending' },
+                'calendars_requests': { ref: 'calendars_requests', type: 'calendar', title: 'คำขอเพิ่มปฏิทิน', action: 'approveCalendar', statusKey: 'status', statusValue: 'pending' },
+                'links_requests': { ref: 'links_requests', type: 'link', title: 'คำขอเพิ่มลิงก์', action: 'approveResource', statusKey: 'status', statusValue: 'pending' },
+                'documents_requests': { ref: 'documents_requests', type: 'document', title: 'คำขอเพิ่มเอกสาร', action: 'approveResource', statusKey: 'status', statusValue: 'pending' },
+            };
+            
+            const container = document.getElementById('approval-requests-container');
+            container.innerHTML = 'กำลังโหลดคำขอ...';
+            let html = '';
+
+            for (const key in collections) {
+                const config = collections[key];
+                let query = db.collection(config.ref);
+                if (config.type === 'user') {
+                    query = query.where(config.statusKey, '==', config.statusValue).where('isAdmin', '==', false);
+                } else {
+                    query = query.where(config.statusKey, '==', config.statusValue);
+                }
+                
+                const snap = await query.get();
+                let listHtml = '';
+                
+                snap.forEach(doc => {
+                    const item = doc.data();
+                    const id = doc.id;
+                    let display = '';
+                    let approveButton = '';
+                    let deleteCol = config.ref;
+                    
+                    if (config.type === 'user') {
+                        display = `<strong>${item.name}</strong> (${item.email})`;
+                        approveButton = `<button class="btn btn-primary" onclick="approveUser('${id}')">อนุมัติ</button>`;
+                        deleteCol = 'users';
+                    } else if (config.type === 'activity' || config.type === 'calendar') {
+                        const dateTime = formatDateTime(item.dateStart, item.timeStart, item.isAllDay);
+                        display = `<strong>[${item.type === 'activity' ? 'กิจกรรม' : 'ประชุม'}] ${item.name}</strong><br><small>${dateTime}</small>`;
+                        approveButton = `<button class="btn btn-primary" onclick="approveRequest('${config.ref}', '${config.ref.replace('_requests', '_approved')}', '${id}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">อนุมัติ</button>`;
+                    } else { // link, document
+                        display = `<strong>[${config.type === 'link' ? 'ลิงก์' : 'เอกสาร'}] ${item.name}</strong><br><small>${item.details}</small>`;
+                         approveButton = `<button class="btn btn-primary" onclick="approveRequest('${config.ref}', '${config.ref.replace('_requests', '_approved')}', '${id}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">อนุมัติ</button>`;
+                    }
+                    
+                    listHtml += `
+                        <div class="list-item">
+                            <div>${display}</div>
+                            <div class="list-actions">
+                                ${approveButton}
+                                <button class="btn btn-danger" onclick="deleteData('${deleteCol}', '${id}')">ลบ/ปฏิเสธ</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (snap.size > 0) {
+                    html += `<h3><i class="fas fa-list-alt"></i> ${config.title} (${snap.size})</h3>`;
+                    html += listHtml;
+                }
+            }
+            container.innerHTML = html || '<p>ไม่มีคำขออนุมัติในขณะนี้</p>';
+        }
+        
+        async function approveUser(uid) {
+             if (!isAdministrator) return;
+             try {
+                 await db.collection('users').doc(uid).update({ isApproved: true });
+                 alert('อนุมัติผู้ใช้งานสำเร็จ');
+                 renderAdminPage();
+             } catch(e) {
+                 alert('อนุมัติผู้ใช้งานล้มเหลว: ' + e.message);
+             }
+        }
+        
+        async function renderAdminEquipmentManagement() {
+            const tableBody = document.getElementById('admin-equipment-list');
+            const borrowedTableBody = document.getElementById('admin-borrowed-list');
+            tableBody.innerHTML = '<tr><td colspan="4">กำลังโหลด...</td></tr>';
+            borrowedTableBody.innerHTML = '<tr><td colspan="5">กำลังโหลด...</td></tr>';
+
+            const equipmentSnap = await db.collection('equipment').get();
+            const equipmentList = [];
+            equipmentSnap.forEach(doc => equipmentList.push({ id: doc.id, ...doc.data() }));
+
+            const loansSnap = await db.collection('equipment_loans').get();
+            const loanList = [];
+            loansSnap.forEach(doc => loanList.push({ id: doc.id, ...doc.data() }));
+
+            let equipmentHtml = '';
+            equipmentList.forEach(item => {
+                const remaining = item.total - (item.borrowed || 0);
+                equipmentHtml += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.total}</td>
+                        <td>${item.borrowed || 0}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="promptEditEquipment('${item.id}', '${item.name}', ${item.total})">แก้ไข</button>
+                            <button class="btn btn-danger" onclick="deleteData('equipment', '${item.id}')">ลบ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = equipmentHtml || '<tr><td colspan="4">ไม่มีอุปกรณ์</td></tr>';
+
+            let borrowedHtml = '';
+            loanList.forEach(loan => {
+                const equipment = equipmentList.find(e => e.id === loan.equipmentId);
+                const equipmentName = equipment ? equipment.name : 'ไม่พบอุปกรณ์';
+                 borrowedHtml += `
+                    <tr>
+                        <td>${equipmentName}</td>
+                        <td>${loan.userName} (${loan.userEmail})</td>
+                        <td>${loan.borrowDate}</td>
+                        <td style="color: ${moment(loan.returnDate).isBefore(moment().format('YYYY-MM-DD')) ? 'red' : 'green'};">${loan.returnDate}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="forceReturnEquipment('${loan.id}', '${loan.equipmentId}')">บังคับคืน</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            borrowedTableBody.innerHTML = borrowedHtml || '<tr><td colspan="5">ไม่มีรายการยืม-คืนในขณะนี้</td></tr>';
+        }
+
+        function promptEditEquipment(id, name, total) {
+            const newName = prompt(`แก้ไขชื่ออุปกรณ์:`, name);
+            if (newName === null) return;
+            const newTotal = parseInt(prompt(`แก้ไขจำนวนทั้งหมด:`, total), 10);
+            if (isNaN(newTotal) || newTotal < 0) { alert('จำนวนไม่ถูกต้อง'); return; }
+
+            db.collection('equipment').doc(id).update({ name: newName, total: newTotal })
+                .then(() => { alert('แก้ไขอุปกรณ์สำเร็จ'); renderAdminEquipmentManagement(); })
+                .catch(e => alert('แก้ไขอุปกรณ์ล้มเหลว: ' + e.message));
+        }
+
+        function addEquipment() {
+            const name = prompt("ชื่ออุปกรณ์:");
+            if (!name) return;
+            const total = parseInt(prompt("จำนวนทั้งหมด:"), 10);
+            if (isNaN(total) || total < 1) { alert('จำนวนไม่ถูกต้อง'); return; }
+
+            db.collection('equipment').add({ name: name, total: total, borrowed: 0 })
+                .then(() => { alert('เพิ่มอุปกรณ์สำเร็จ'); renderAdminEquipmentManagement(); })
+                .catch(e => alert('เพิ่มอุปกรณ์ล้มเหลว: ' + e.message));
+        }
+        
+        function forceReturnEquipment(loanId, equipmentId) {
+             if (!confirm('ยืนยันการ **บังคับคืน** อุปกรณ์นี้หรือไม่?')) return;
+             
+             db.collection('equipment_loans').doc(loanId).delete()
+                .then(() => {
+                    // Decrement borrowed count using transaction
+                    db.collection('equipment').doc(equipmentId).update({
+                        borrowed: firebase.firestore.FieldValue.increment(-1)
+                    });
+                    alert('บังคับคืนอุปกรณ์สำเร็จ');
+                    renderAdminEquipmentManagement();
+                })
+                .catch(e => alert('บังคับคืนอุปกรณ์ล้มเหลว: ' + e.message));
+        }
+
+        async function renderAdminUserManagement() {
+            const container = document.getElementById('user-management-list');
+            container.innerHTML = 'กำลังโหลด...';
+
+            const snap = await db.collection('users').orderBy('email', 'asc').get();
+            let html = '';
+
+            snap.forEach(doc => {
+                const item = doc.data();
+                const id = doc.id;
+                
+                if (item.email === ADMIN_EMAIL && item.isAdmin) return; // Skip the main admin in the deletion list
+
+                const status = item.isApproved ? (item.isAdmin ? '(ผู้ดูแล)' : '') : '(<span style="color: orange;">รออนุมัติ</span>)';
+                const deleteButton = item.isAdmin ? '' : `<button class="btn btn-danger" onclick="deleteUser('${id}')">ลบบัญชี</button>`;
+                
+                html += `
+                    <div class="list-item">
+                        <span><strong>${item.email}</strong> (${item.name}) ${status}</span>
+                        <div class="list-actions">
+                            <button class="btn btn-secondary" onclick="resetPassword('${item.email}')">รีเซ็ตพาส</button>
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html || '<p>ไม่มีผู้ใช้งานในระบบ (ยกเว้นผู้ดูแลหลัก)</p>';
+        }
+
+        function resetPassword(email) {
+            if (!confirm(`ยืนยันการส่งลิงก์รีเซ็ตรหัสผ่านไปยัง ${email}?`)) return;
+
+            auth.sendPasswordResetEmail(email)
+                .then(() => alert(`ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง ${email} สำเร็จแล้ว`))
+                .catch(e => alert('ส่งลิงก์รีเซ็ตรหัสผ่านล้มเหลว: ' + e.message));
+        }
+        
+        async function deleteUser(uid) {
+            if (!confirm('ยืนยันการลบบัญชีผู้ใช้งานนี้หรือไม่? **หมายเหตุ: การลบผู้ใช้ใน Firestore ไม่ได้ลบผู้ใช้ใน Auth คุณต้องลบใน Firebase Console ด้วยตนเอง!**')) return;
+            try {
+                // Remove profile from Firestore
+                await db.collection('users').doc(uid).delete();
+                alert('ลบโปรไฟล์ผู้ใช้งานจาก Firestore สำเร็จ (กรุณาลบผู้ใช้จาก Firebase Auth Console ด้วย)');
+                renderAdminUserManagement();
+            } catch(e) {
+                alert('ลบโปรไฟล์ผู้ใช้งานล้มเหลว: ' + e.message);
+            }
+        }
+        
+        // --- Change Password Page Logic ---
+        
+        function changePassword(event) {
+            event.preventDefault();
+            const form = event.target;
+            const currentPass = form['current-password'].value;
+            const newPass = form['new-password'].value;
+            
+            if (newPass.length < 6) {
+                alert('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
+                return;
+            }
+
+            const credential = firebase.auth.EmailAuthProvider.credential(
+                currentUser.email,
+                currentPass
+            );
+
+            currentUser.reauthenticateWithCredential(credential)
+                .then(() => currentUser.updatePassword(newPass))
+                .then(() => {
+                    alert('เปลี่ยนรหัสผ่านสำเร็จ! กรุณาลองเข้าสู่ระบบใหม่');
+                    logout();
+                })
+                .catch((error) => {
+                    alert('เปลี่ยนรหัสผ่านล้มเหลว: ' + error.message);
+                });
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', checkAuth);
+
+    </script>
+    
+    <div class="header">
+        <div class="logo-container">
+            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="Logo" class="logo">
+            <span class="app-title">SPT MORAL SMLC</span>
+        </div>
+        <div class="menu-icon" onclick="toggleMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="nav-links" id="nav-links">
+            </div>
+        <div class="auth-actions" id="auth-actions">
+            </div>
+    </div>
+
+    <div class="container">
+        
+        <div id="login-page" style="display: none;">
+            <div class="form-card">
+                <h2 id="form-title">ลงชื่อเข้าใช้งาน</h2>
+                
+                <form id="login-form" onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="login-email">อีเมล</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">รหัสผ่าน</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">เข้าสู่ระบบ</button>
+                    <p style="margin-top: 15px;">ยังไม่มีบัญชี? <a href="#" onclick="showRegisterPage()">ลงทะเบียนที่นี่</a></p>
+                </form>
+
+                <form id="register-form" onsubmit="register(event)" style="display: none;">
+                    <div class="form-group">
+                        <label for="reg-prefix">คำนำหน้าชื่อ</label>
+                        <select id="reg-prefix" required>
+                            <option value="เด็กชาย">เด็กชาย</option>
+                            <option value="เด็กหญิง">เด็กหญิง</option>
+                            <option value="นาย">นาย</option>
+                            <option value="นางสาว">นางสาว</option>
+                            <option value="นาง">นาง</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="reg-name">ชื่อ</label>
+                            <input type="text" id="reg-name" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="reg-lastname">นามสกุล</label>
+                            <input type="text" id="reg-lastname" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">อีเมล</label>
+                        <input type="email" id="reg-email" placeholder="ตัวอย่าง: user@spt.ac.th" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">รหัสผ่าน (6 ตัวขึ้นไป)</label>
+                        <input type="password" id="reg-password" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">ลงทะเบียน</button>
+                    <p style="margin-top: 15px;">มีบัญชีอยู่แล้ว? <a href="#" onclick="showLoginPage()">เข้าสู่ระบบ</a></p>
+                </form>
+            </div>
+        </div>
+
+        <div id="main-app" style="display: none;">
+            
+            <div id="dashboard" class="app-page">
+                <h2><i class="fas fa-chart-line"></i> หน้าหลัก</h2>
+                <div class="dashboard-grid">
+                    
+                    <div class="card">
+                        <h4><i class="fas fa-calendar-alt"></i> ปฏิทินเดือนปัจจุบัน</h4>
+                        <div class="calendar-mockup">
+                            <div class="calendar-day-header">อา.</div>
+                            <div class="calendar-day-header">จ.</div>
+                            <div class="calendar-day-header">อ.</div>
+                            <div class="calendar-day-header">พ.</div>
+                            <div class="calendar-day-header">พฤ.</div>
+                            <div class="calendar-day-header">ศ.</div>
+                            <div class="calendar-day-header">ส.</div>
+                            <div id="calendar-mockup-days" style="grid-column: 1 / 8; display: contents;">
+                                </div>
+                        </div>
+                        <p style="text-align: center;"><a href="#" onclick="showPage('calendar')">ดูปฏิทินทั้งหมด</a></p>
+                    </div>
+                    
+                    <div class="card">
+                        <h4><i class="fas fa-bullhorn"></i> กิจกรรมและปฏิทินที่จะมาถึง</h4>
+                        <div id="upcoming-events-list">
+                            </div>
+                    </div>
+
+                    <div class="card">
+                        <h4><i class="fas fa-laptop"></i> สถานะอุปกรณ์</h4>
+                        <div id="equipment-status-list">
+                            </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h4><i class="fas fa-link"></i> ลิงก์ล่าสุด</h4>
+                        <div id="latest-links">
+                            </div>
+                    </div>
+
+                    <div class="card">
+                        <h4><i class="fas fa-file-alt"></i> เอกสารล่าสุด</h4>
+                        <div id="latest-documents">
+                            </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="activities" class="app-page">
+                <h2 style="display: flex; justify-content: space-between;">
+                    <i class="fas fa-calendar-check"></i> กิจกรรม
+                    <button class="btn btn-primary" onclick="openActivityModal()"><i class="fas fa-plus"></i> เพิ่มกิจกรรมใหม่</button>
+                </h2>
+                
+                <h3><i class="fas fa-clock"></i> รายการที่รออนุมัติ</h3>
+                <div id="activity-pending-list" class="card">
+                    </div>
+                
+                <h3><i class="fas fa-check-circle"></i> รายการที่อนุมัติแล้ว</h3>
+                <div id="activity-approved-list" class="card">
+                    </div>
+            </div>
+            
+            <div id="links" class="app-page">
+                <h2 style="display: flex; justify-content: space-between;">
+                    <i class="fas fa-link"></i> ลิงก์
+                    <button class="btn btn-primary" onclick="openResourceModal('link')"><i class="fas fa-plus"></i> เพิ่มลิงก์ใหม่</button>
+                </h2>
+                
+                <h3><i class="fas fa-clock"></i> รายการที่รออนุมัติ</h3>
+                <div id="link-pending-list" class="card">
+                    </div>
+                
+                <h3><i class="fas fa-check-circle"></i> รายการที่อนุมัติแล้ว</h3>
+                <div id="link-approved-list" class="card">
+                    </div>
+            </div>
+            
+            <div id="documents" class="app-page">
+                <h2 style="display: flex; justify-content: space-between;">
+                    <i class="fas fa-file-alt"></i> เอกสาร
+                    <button class="btn btn-primary" onclick="openResourceModal('document')"><i class="fas fa-plus"></i> เพิ่มเอกสารใหม่</button>
+                </h2>
+                
+                <h3><i class="fas fa-clock"></i> รายการที่รออนุมัติ</h3>
+                <div id="document-pending-list" class="card">
+                    </div>
+                
+                <h3><i class="fas fa-check-circle"></i> รายการที่อนุมัติแล้ว</h3>
+                <div id="document-approved-list" class="card">
+                    </div>
+            </div>
+
+            <div id="equipment" class="app-page">
+                <h2><i class="fas fa-laptop"></i> ระบบยืม-คืนอุปกรณ์</h2>
+                
+                <div class="equipment-grid">
+                    <div class="card">
+                        <h4><i class="fas fa-warehouse"></i> อุปกรณ์คงเหลือ (มีปุ่มยืม)</h4>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>อุปกรณ์</th>
+                                        <th>คงเหลือ</th>
+                                        <th>ทั้งหมด</th>
+                                        <th>ดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="available-equipment-body">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h4><i class="fas fa-clipboard-list"></i> อุปกรณ์ที่ยืมอยู่ (มีปุ่มคืน)</h4>
+                         <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>อุปกรณ์</th>
+                                        <th>วันยืม</th>
+                                        <th>วันกำหนดคืน</th>
+                                        <th>ดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="borrowed-equipment-body">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendar" class="app-page">
+                 <h2 style="display: flex; justify-content: space-between;">
+                    <i class="fas fa-calendar-alt"></i> ปฏิทิน (กิจกรรม/ประชุม)
+                    <button class="btn btn-primary" onclick="openCalendarModal()"><i class="fas fa-plus"></i> เพิ่มรายการใหม่</button>
+                </h2>
+                
+                <h3><i class="fas fa-clock"></i> รายการที่รออนุมัติ</h3>
+                <div id="calendar-pending-list" class="card">
+                    </div>
+                
+                <h3><i class="fas fa-check-circle"></i> รายการที่อนุมัติแล้ว</h3>
+                <div id="calendar-approved-list" class="card">
+                    </div>
+            </div>
+
+            <div id="admin" class="app-page">
+                <h2><i class="fas fa-cog"></i> จัดการระบบ (ผู้ดูแลเท่านั้น)</h2>
+                
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3><i class="fas fa-user-check"></i> คำขออนุมัติ</h3>
+                    <div id="approval-requests-container">
+                        </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="display: flex; justify-content: space-between;">
+                        <i class="fas fa-tools"></i> จัดการอุปกรณ์
+                        <button class="btn btn-primary" onclick="addEquipment()"><i class="fas fa-plus"></i> เพิ่มอุปกรณ์ใหม่</button>
+                    </h3>
+                    <h4>อุปกรณ์ทั้งหมด</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>อุปกรณ์</th>
+                                    <th>ทั้งหมด</th>
+                                    <th>ถูกยืม</th>
+                                    <th>ดำเนินการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-equipment-list">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <h4>อุปกรณ์ที่ถูกยืมอยู่</h4>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>อุปกรณ์</th>
+                                    <th>ผู้ยืม (อีเมล)</th>
+                                    <th>วันยืม</th>
+                                    <th>กำหนดคืน</th>
+                                    <th>ดำเนินการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-borrowed-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-users-cog"></i> จัดการผู้ใช้งาน</h3>
+                    <div id="user-management-list">
+                        </div>
+                </div>
+            </div>
+
+            <div id="change-password" class="app-page">
+                 <div class="form-card" style="max-width: 500px;">
+                    <h2><i class="fas fa-key"></i> แก้ไขรหัสผ่าน</h2>
+                    <form id="pass-change-form" onsubmit="changePassword(event)">
+                        <div class="form-group">
+                            <label for="current-password">รหัสผ่านปัจจุบัน</label>
+                            <input type="password" id="current-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)</label>
+                            <input type="password" id="new-password" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">ยืนยันการเปลี่ยนรหัสผ่าน</button>
+                    </form>
+                 </div>
+            </div>
+
+        </div> </div> <div id="activity-modal" class="modal" onclick="if(event.target.id === 'activity-modal') closeActivityModal()">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeActivityModal()">&times;</span>
+            <h3>เพิ่มกิจกรรมใหม่</h3>
+            <form id="activity-form" onsubmit="submitActivity(event)">
+                <div class="form-group">
+                    <label for="act-name">ชื่อกิจกรรม</label>
+                    <input type="text" id="act-name" required>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="activity-all-day" onchange="document.getElementById('activity-time-group').style.display = this.checked ? 'none' : 'block'">
+                    <label for="activity-all-day" style="display: inline; margin-left: 5px;">ตลอดทั้งวัน</label>
+                </div>
+                <div class="form-group">
+                    <label>วันที่/เวลา เริ่มต้น</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="act-date-start" required style="flex: 1;">
+                        <input type="time" id="act-time-start" required style="flex: 1;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>วันที่/เวลา สิ้นสุด</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="act-date-end" required style="flex: 1;">
+                        <input type="time" id="act-time-end" required style="flex: 1;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="act-details">รายละเอียด</label>
+                    <textarea id="act-details" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">ส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="calendar-modal" class="modal" onclick="if(event.target.id === 'calendar-modal') closeCalendarModal()">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeCalendarModal()">&times;</span>
+            <h3>เพิ่มรายการปฏิทิน</h3>
+            <form id="calendar-form" onsubmit="submitCalendar(event)">
+                <div class="form-group">
+                    <label for="cal-name">ชื่อรายการ</label>
+                    <input type="text" id="cal-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="cal-type">ประเภท</label>
+                    <select id="cal-type" required>
+                        <option value="กิจกรรม">กิจกรรม</option>
+                        <option value="ประชุม">ประชุม</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="cal-all-day" onchange="document.getElementById('calendar-time-group').style.display = this.checked ? 'none' : 'block'">
+                    <label for="cal-all-day" style="display: inline; margin-left: 5px;">ตลอดทั้งวัน</label>
+                </div>
+                <div id="calendar-time-group">
+                    <div class="form-group">
+                        <label>วันที่/เวลา เริ่มต้น</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="date" id="cal-date-start" required style="flex: 1;">
+                            <input type="time" id="cal-time-start" required style="flex: 1;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>วันที่/เวลา สิ้นสุด</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="date" id="cal-date-end" required style="flex: 1;">
+                            <input type="time" id="cal-time-end" required style="flex: 1;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cal-details">รายละเอียด</label>
+                    <textarea id="cal-details" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">ส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="resource-modal" class="modal" onclick="if(event.target.id === 'resource-modal') closeResourceModal()">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeResourceModal()">&times;</span>
+            <h3 id="resource-modal-title">เพิ่มทรัพยากร</h3>
+            <form id="resource-form" onsubmit="submitResource(event)">
+                <input type="hidden" id="res-type" name="res-type" required>
+                <div class="form-group">
+                    <label for="res-name">ชื่อ</label>
+                    <input type="text" id="res-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="res-link">ลิงก์ URL</label>
+                    <input type="url" id="res-link" required>
+                </div>
+                <div class="form-group">
+                    <label for="res-details">รายละเอียด</label>
+                    <textarea id="res-details" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">ส่งคำขออนุมัติ</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved
+    </div>
+
+</body>
+</html>
