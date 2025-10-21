@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคณะกรรมนักเรียนขับเคลื่อนโรงเรียนคุณธรรม</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #1e40af;
+            --accent-color: #60a5fa;
+            --light-color: #f8fafc;
+            --dark-color: #1e293b;
+        }
+        
+        * {
+            transition: all 0.3s ease;
+        }
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: white;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin: 0 0.25rem;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .nav-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .form-input {
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            padding: 0.75rem;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th, .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+            }
+            
+            .nav-item {
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        .fc {
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .fc-toolbar-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .fc-event {
+            border-radius: 4px;
+            border: none;
+            padding: 2px 4px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Firebase Configuration -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            // ใส่ Firebase config ของคุณที่นี่
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // ตั้งค่าให้ sptmorral@spt.ac.th เป็น admin
+        const ADMIN_EMAIL = "sptmorral@spt.ac.th";
+    </script>
+
+    <!-- Login/Register Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div id="loginForm" class="auth-form">
+                <h2 class="text-2xl font-bold mb-6 text-center">เข้าสู่ระบบ</h2>
+                <input type="email" id="loginEmail" class="form-input" placeholder="อีเมล">
+                <input type="password" id="loginPassword" class="form-input" placeholder="รหัสผ่าน">
+                <button id="loginBtn" class="btn btn-primary w-full mb-4">เข้าสู่ระบบ</button>
+                <p class="text-center">ยังไม่มีบัญชี? <span id="showRegister" class="text-blue-500 cursor-pointer">สมัครสมาชิก</span></p>
+            </div>
+            
+            <div id="registerForm" class="auth-form hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center">สมัครสมาชิก</h2>
+                <input type="text" id="registerName" class="form-input" placeholder="ชื่อ-สกุล">
+                <input type="email" id="registerEmail" class="form-input" placeholder="อีเมล">
+                <input type="password" id="registerPassword" class="form-input" placeholder="รหัสผ่าน">
+                <input type="password" id="registerConfirmPassword" class="form-input" placeholder="ยืนยันรหัสผ่าน">
+                <button id="registerBtn" class="btn btn-primary w-full mb-4">สมัครสมาชิก</button>
+                <p class="text-center">มีบัญชีอยู่แล้ว? <span id="showLogin" class="text-blue-500 cursor-pointer">เข้าสู่ระบบ</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until login) -->
+    <div id="app" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง" class="h-12 mr-3">
+                    <div>
+                        <h1 class="text-xl font-bold">คณะกรรมนักเรียนขับเคลื่อนโรงเรียนคุณธรรม</h1>
+                        <p class="text-gray-600 text-sm">โรงเรียนสตรีพัทลุง</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <span id="userEmail" class="mr-4 text-gray-700"></span>
+                    <button id="logoutBtn" class="btn btn-secondary">ออกจากระบบ</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm py-2">
+            <div class="container mx-auto px-4">
+                <div class="nav-container flex flex-wrap">
+                    <div class="nav-item active" data-page="dashboard">หน้าหลัก</div>
+                    <div class="nav-item" data-page="activities">กิจกรรม</div>
+                    <div class="nav-item" data-page="links">ลิงก์</div>
+                    <div class="nav-item" data-page="documents">เอกสาร</div>
+                    <div class="nav-item" data-page="borrow">ยืม-คืนอุปกรณ์</div>
+                    <div class="nav-item" data-page="calendar">ปฏิทิน</div>
+                    <div id="adminNav" class="nav-item hidden" data-page="admin">จัดการระบบ</div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-6">
+            <!-- Dashboard Page -->
+            <div id="dashboardPage" class="page">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="md:w-2/3">
+                        <div class="card">
+                            <h2 class="text-xl font-bold mb-4">ปฏิทินกิจกรรม</h2>
+                            <div id="calendar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="md:w-1/3">
+                        <div class="card">
+                            <h2 class="text-xl font-bold mb-4">การยืมอุปกรณ์ล่าสุด</h2>
+                            <div id="borrowingsList" class="space-y-3">
+                                <!-- จะแสดงข้อมูลการยืมอุปกรณ์ที่นี่ -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activities Page -->
+            <div id="activitiesPage" class="page hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">กิจกรรม</h2>
+                    <button id="addActivityBtn" class="btn btn-primary">เพิ่มกิจกรรม</button>
+                </div>
+                
+                <div class="card">
+                    <div id="activitiesList">
+                        <!-- จะแสดงรายการกิจกรรมที่นี่ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links Page -->
+            <div id="linksPage" class="page hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">ลิงก์</h2>
+                    <button id="addLinkBtn" class="btn btn-primary admin-only hidden">เพิ่มลิงก์</button>
+                </div>
+                
+                <div class="card">
+                    <div id="linksList">
+                        <!-- จะแสดงรายการลิงก์ที่นี่ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Page -->
+            <div id="documentsPage" class="page hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">เอกสาร</h2>
+                    <button id="addDocumentBtn" class="btn btn-primary admin-only hidden">เพิ่มเอกสาร</button>
+                </div>
+                
+                <div class="card">
+                    <div id="documentsList">
+                        <!-- จะแสดงรายการเอกสารที่นี่ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Borrow Page -->
+            <div id="borrowPage" class="page hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">ระบบยืม-คืนอุปกรณ์</h2>
+                    <div>
+                        <button id="addItemBtn" class="btn btn-primary admin-only hidden mr-2">เพิ่มอุปกรณ์</button>
+                        <button id="requestBorrowBtn" class="btn btn-primary">คำขอยืมอุปกรณ์</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div id="borrowList">
+                        <!-- จะแสดงรายการการยืมอุปกรณ์ที่นี่ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Page -->
+            <div id="calendarPage" class="page hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">ระบบปฏิทิน</h2>
+                    <button id="addEventBtn" class="btn btn-primary">เพิ่มกิจกรรมในปฏิทิน</button>
+                </div>
+                
+                <div class="card">
+                    <div id="eventsList">
+                        <!-- จะแสดงรายการกิจกรรมในปฏิทินที่นี่ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Page -->
+            <div id="adminPage" class="page hidden">
+                <h2 class="text-2xl font-bold mb-6">จัดการระบบ (สำหรับผู้ดูแลระบบ)</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card">
+                        <h3 class="text-lg font-bold mb-4">คำขอที่รอการอนุมัติ</h3>
+                        <div id="pendingRequests">
+                            <!-- จะแสดงคำขอที่รออนุมัติที่นี่ -->
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="text-lg font-bold mb-4">จัดการผู้ใช้งาน</h3>
+                        <div id="userManagement">
+                            <!-- จะแสดงรายการผู้ใช้งานที่นี่ -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8 py-6">
+            <div class="container mx-auto px-4 text-center text-gray-600">
+                &copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved
+            </div>
+        </footer>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div id="addActivityModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">เพิ่มกิจกรรม</h2>
+            <input type="text" id="activityTitle" class="form-input" placeholder="ชื่อกิจกรรม">
+            <textarea id="activityDescription" class="form-input" placeholder="รายละเอียดกิจกรรม" rows="3"></textarea>
+            <input type="date" id="activityDate" class="form-input">
+            <input type="time" id="activityTime" class="form-input">
+            <div class="flex justify-end mt-4">
+                <button id="cancelActivityBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveActivityBtn" class="btn btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Link Modal -->
+    <div id="addLinkModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">เพิ่มลิงก์</h2>
+            <input type="text" id="linkName" class="form-input" placeholder="ชื่อลิงก์">
+            <input type="url" id="linkUrl" class="form-input" placeholder="URL">
+            <div class="flex justify-end mt-4">
+                <button id="cancelLinkBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveLinkBtn" class="btn btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Document Modal -->
+    <div id="addDocumentModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">เพิ่มเอกสาร</h2>
+            <input type="text" id="documentName" class="form-input" placeholder="ชื่อเอกสาร">
+            <input type="url" id="documentUrl" class="form-input" placeholder="URL">
+            <div class="flex justify-end mt-4">
+                <button id="cancelDocumentBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveDocumentBtn" class="btn btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">เพิ่มอุปกรณ์</h2>
+            <input type="text" id="itemName" class="form-input" placeholder="ชื่ออุปกรณ์">
+            <input type="number" id="itemQuantity" class="form-input" placeholder="จำนวน">
+            <div class="flex justify-end mt-4">
+                <button id="cancelItemBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveItemBtn" class="btn btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Borrow Modal -->
+    <div id="requestBorrowModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">คำขอยืมอุปกรณ์</h2>
+            <select id="borrowItem" class="form-input">
+                <option value="">เลือกอุปกรณ์</option>
+                <!-- ตัวเลือกอุปกรณ์จะถูกเพิ่มที่นี่ -->
+            </select>
+            <input type="number" id="borrowQuantity" class="form-input" placeholder="จำนวนที่ต้องการยืม">
+            <input type="date" id="borrowDate" class="form-input">
+            <input type="date" id="returnDate" class="form-input">
+            <div class="flex justify-end mt-4">
+                <button id="cancelBorrowBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveBorrowBtn" class="btn btn-primary">ส่งคำขอ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Event Modal -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">เพิ่มกิจกรรมในปฏิทิน</h2>
+            <input type="text" id="eventTitle" class="form-input" placeholder="ชื่อกิจกรรม">
+            <input type="date" id="eventStartDate" class="form-input">
+            <input type="date" id="eventEndDate" class="form-input">
+            <input type="text" id="eventLocation" class="form-input" placeholder="สถานที่">
+            <select id="eventType" class="form-input">
+                <option value="">เลือกประเภท</option>
+                <option value="ประชุม">ประชุม</option>
+                <option value="กิจกรรม">กิจกรรม</option>
+            </select>
+            <textarea id="eventDescription" class="form-input" placeholder="รายละเอียด" rows="3"></textarea>
+            <div class="flex justify-end mt-4">
+                <button id="cancelEventBtn" class="btn mr-2" style="background-color: #e5e7eb;">ยกเลิก</button>
+                <button id="saveEventBtn" class="btn btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ตัวแปรสำหรับเก็บข้อมูล
+        let currentUser = null;
+        let isAdmin = false;
+        
+        // DOM Elements
+        const authModal = document.getElementById('authModal');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const app = document.getElementById('app');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmail = document.getElementById('userEmail');
+        const adminNav = document.getElementById('adminNav');
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
+        const adminOnlyElements = document.querySelectorAll('.admin-only');
+        
+        // Modal Elements
+        const addActivityModal = document.getElementById('addActivityModal');
+        const addLinkModal = document.getElementById('addLinkModal');
+        const addDocumentModal = document.getElementById('addDocumentModal');
+        const addItemModal = document.getElementById('addItemModal');
+        const requestBorrowModal = document.getElementById('requestBorrowModal');
+        const addEventModal = document.getElementById('addEventModal');
+        
+        // Button Elements
+        const addActivityBtn = document.getElementById('addActivityBtn');
+        const addLinkBtn = document.getElementById('addLinkBtn');
+        const addDocumentBtn = document.getElementById('addDocumentBtn');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const requestBorrowBtn = document.getElementById('requestBorrowBtn');
+        const addEventBtn = document.getElementById('addEventBtn');
+        
+        // Cancel Buttons
+        const cancelActivityBtn = document.getElementById('cancelActivityBtn');
+        const cancelLinkBtn = document.getElementById('cancelLinkBtn');
+        const cancelDocumentBtn = document.getElementById('cancelDocumentBtn');
+        const cancelItemBtn = document.getElementById('cancelItemBtn');
+        const cancelBorrowBtn = document.getElementById('cancelBorrowBtn');
+        const cancelEventBtn = document.getElementById('cancelEventBtn');
+        
+        // Save Buttons
+        const saveActivityBtn = document.getElementById('saveActivityBtn');
+        const saveLinkBtn = document.getElementById('saveLinkBtn');
+        const saveDocumentBtn = document.getElementById('saveDocumentBtn');
+        const saveItemBtn = document.getElementById('saveItemBtn');
+        const saveBorrowBtn = document.getElementById('saveBorrowBtn');
+        const saveEventBtn = document.getElementById('saveEventBtn');
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Authentication event listeners
+            showRegister.addEventListener('click', showRegisterForm);
+            showLogin.addEventListener('click', showLoginForm);
+            loginBtn.addEventListener('click', login);
+            registerBtn.addEventListener('click', register);
+            logoutBtn.addEventListener('click', logout);
+            
+            // Navigation event listeners
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const page = this.getAttribute('data-page');
+                    showPage(page);
+                    
+                    // Update active nav item
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Modal open/close event listeners
+            addActivityBtn.addEventListener('click', () => showModal(addActivityModal));
+            addLinkBtn.addEventListener('click', () => showModal(addLinkModal));
+            addDocumentBtn.addEventListener('click', () => showModal(addDocumentModal));
+            addItemBtn.addEventListener('click', () => showModal(addItemModal));
+            requestBorrowBtn.addEventListener('click', () => showModal(requestBorrowModal));
+            addEventBtn.addEventListener('click', () => showModal(addEventModal));
+            
+            // Cancel button event listeners
+            cancelActivityBtn.addEventListener('click', () => hideModal(addActivityModal));
+            cancelLinkBtn.addEventListener('click', () => hideModal(addLinkModal));
+            cancelDocumentBtn.addEventListener('click', () => hideModal(addDocumentModal));
+            cancelItemBtn.addEventListener('click', () => hideModal(addItemModal));
+            cancelBorrowBtn.addEventListener('click', () => hideModal(requestBorrowModal));
+            cancelEventBtn.addEventListener('click', () => hideModal(addEventModal));
+            
+            // Save button event listeners
+            saveActivityBtn.addEventListener('click', saveActivity);
+            saveLinkBtn.addEventListener('click', saveLink);
+            saveDocumentBtn.addEventListener('click', saveDocument);
+            saveItemBtn.addEventListener('click', saveItem);
+            saveBorrowBtn.addEventListener('click', saveBorrowRequest);
+            saveEventBtn.addEventListener('click', saveEvent);
+            
+            // Initialize authentication state
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    userEmail.textContent = user.email;
+                    checkAdminStatus(user);
+                    app.classList.remove('hidden');
+                    authModal.style.display = 'none';
+                } else {
+                    currentUser = null;
+                    app.classList.add('hidden');
+                    authModal.style.display = 'flex';
+                    showLoginForm();
+                }
+            });
+            
+            // Initialize calendar
+            initializeCalendar();
+        });
+        
+        // Authentication Functions
+        function showLoginForm() {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+        }
+        
+        function showRegisterForm() {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        }
+        
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    // Login successful
+                    console.log('User logged in:', userCredential.user);
+                })
+                .catch(error => {
+                    alert('เข้าสู่ระบบล้มเหลว: ' + error.message);
+                });
+        }
+        
+        function register() {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('รหัสผ่านไม่ตรงกัน');
+                return;
+            }
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    // Save additional user data to Firestore
+                    return db.collection('users').doc(userCredential.user.uid).set({
+                        name: name,
+                        email: email,
+                        role: 'user',
+                        approved: false // ต้องได้รับการอนุมัติจาก admin
+                    });
+                })
+                .then(() => {
+                    alert('สมัครสมาชิกสำเร็จ รอการอนุมัติจากผู้ดูแลระบบ');
+                    showLoginForm();
+                })
+                .catch(error => {
+                    alert('สมัครสมาชิกล้มเหลว: ' + error.message);
+                });
+        }
+        
+        function logout() {
+            auth.signOut();
+        }
+        
+        function checkAdminStatus(user) {
+            if (user.email === ADMIN_EMAIL) {
+                isAdmin = true;
+                adminNav.classList.remove('hidden');
+                adminOnlyElements.forEach(el => el.classList.remove('hidden'));
+                
+                // Load admin data
+                loadPendingRequests();
+                loadUsers();
+            } else {
+                // ตรวจสอบว่าเป็นผู้ใช้ที่ได้รับการอนุมัติแล้วหรือไม่
+                db.collection('users').doc(user.uid).get()
+                    .then(doc => {
+                        if (doc.exists && doc.data().approved) {
+                            isAdmin = false;
+                            adminNav.classList.add('hidden');
+                            adminOnlyElements.forEach(el => el.classList.add('hidden'));
+                        } else {
+                            alert('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ');
+                            logout();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking user approval:', error);
+                    });
+            }
+            
+            // Load data for all users
+            loadDashboardData();
+            loadActivities();
+            loadLinks();
+            loadDocuments();
+            loadBorrowData();
+            loadEvents();
+        }
+        
+        // Navigation Functions
+        function showPage(pageName) {
+            pages.forEach(page => {
+                if (page.id === `${pageName}Page`) {
+                    page.classList.remove('hidden');
+                } else {
+                    page.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Modal Functions
+        function showModal(modal) {
+            modal.style.display = 'flex';
+        }
+        
+        function hideModal(modal) {
+            modal.style.display = 'none';
+        }
+        
+        // Data Management Functions
+        function initializeCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: [
+                    // กิจกรรมจะถูกเพิ่มที่นี่จาก Firestore
+                ]
+            });
+            calendar.render();
+        }
+        
+        function loadDashboardData() {
+            // โหลดข้อมูลการยืมอุปกรณ์ล่าสุด
+            db.collection('borrowings').orderBy('createdAt', 'desc').limit(5).get()
+                .then(snapshot => {
+                    const borrowingsList = document.getElementById('borrowingsList');
+                    borrowingsList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const borrowItem = document.createElement('div');
+                        borrowItem.className = 'p-3 bg-gray-50 rounded-lg';
+                        borrowItem.innerHTML = `
+                            <div class="font-medium">${data.itemName}</div>
+                            <div class="text-sm text-gray-600">ยืมโดย: ${data.borrowerName}</div>
+                            <div class="text-sm text-gray-600">วันที่ยืม: ${new Date(data.borrowDate.seconds * 1000).toLocaleDateString('th-TH')}</div>
+                        `;
+                        borrowingsList.appendChild(borrowItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading borrowings:', error);
+                });
+        }
+        
+        function loadActivities() {
+            // โหลดรายการกิจกรรม
+            db.collection('activities').where('approved', '==', true).get()
+                .then(snapshot => {
+                    const activitiesList = document.getElementById('activitiesList');
+                    activitiesList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const activityItem = document.createElement('div');
+                        activityItem.className = 'p-4 border-b border-gray-200';
+                        activityItem.innerHTML = `
+                            <h3 class="font-bold">${data.title}</h3>
+                            <p class="text-gray-600">${data.description}</p>
+                            <div class="text-sm text-gray-500 mt-2">${new Date(data.date).toLocaleDateString('th-TH')} ${data.time}</div>
+                        `;
+                        activitiesList.appendChild(activityItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading activities:', error);
+                });
+        }
+        
+        function loadLinks() {
+            // โหลดรายการลิงก์
+            db.collection('links').get()
+                .then(snapshot => {
+                    const linksList = document.getElementById('linksList');
+                    linksList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const linkItem = document.createElement('div');
+                        linkItem.className = 'p-4 border-b border-gray-200';
+                        linkItem.innerHTML = `
+                            <a href="${data.url}" target="_blank" class="text-blue-500 hover:underline font-medium">${data.name}</a>
+                        `;
+                        linksList.appendChild(linkItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading links:', error);
+                });
+        }
+        
+        function loadDocuments() {
+            // โหลดรายการเอกสาร
+            db.collection('documents').get()
+                .then(snapshot => {
+                    const documentsList = document.getElementById('documentsList');
+                    documentsList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const documentItem = document.createElement('div');
+                        documentItem.className = 'p-4 border-b border-gray-200';
+                        documentItem.innerHTML = `
+                            <a href="${data.url}" target="_blank" class="text-blue-500 hover:underline font-medium">${data.name}</a>
+                        `;
+                        documentsList.appendChild(documentItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading documents:', error);
+                });
+        }
+        
+        function loadBorrowData() {
+            // โหลดรายการการยืมอุปกรณ์
+            let query = db.collection('borrowings');
+            
+            // ถ้าไม่ใช่ admin แสดงเฉพาะของตัวเอง
+            if (!isAdmin) {
+                query = query.where('borrowerId', '==', currentUser.uid);
+            }
+            
+            query.orderBy('createdAt', 'desc').get()
+                .then(snapshot => {
+                    const borrowList = document.getElementById('borrowList');
+                    borrowList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const borrowItem = document.createElement('div');
+                        borrowItem.className = 'p-4 border-b border-gray-200 flex justify-between items-center';
+                        
+                        let statusBadge = '';
+                        if (data.status === 'pending') {
+                            statusBadge = '<span class="badge badge-pending">รออนุมัติ</span>';
+                        } else if (data.status === 'approved') {
+                            statusBadge = '<span class="badge badge-approved">อนุมัติแล้ว</span>';
+                        } else if (data.status === 'rejected') {
+                            statusBadge = '<span class="badge badge-rejected">ปฏิเสธ</span>';
+                        } else if (data.status === 'returned') {
+                            statusBadge = '<span class="badge badge-approved">คืนแล้ว</span>';
+                        }
+                        
+                        borrowItem.innerHTML = `
+                            <div>
+                                <div class="font-medium">${data.itemName}</div>
+                                <div class="text-sm text-gray-600">จำนวน: ${data.quantity}</div>
+                                <div class="text-sm text-gray-600">วันที่ยืม: ${new Date(data.borrowDate.seconds * 1000).toLocaleDateString('th-TH')}</div>
+                                <div class="text-sm text-gray-600">วันที่คืน: ${new Date(data.returnDate.seconds * 1000).toLocaleDateString('th-TH')}</div>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                                ${data.status === 'approved' && !isAdmin ? '<button class="btn btn-primary mt-2 return-item" data-id="' + doc.id + '">คืนอุปกรณ์</button>' : ''}
+                            </div>
+                        `;
+                        borrowList.appendChild(borrowItem);
+                    });
+                    
+                    // Add event listeners for return buttons
+                    document.querySelectorAll('.return-item').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            returnItem(id);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading borrow data:', error);
+                });
+        }
+        
+        function loadEvents() {
+            // โหลดรายการกิจกรรมในปฏิทิน
+            db.collection('events').where('approved', '==', true).get()
+                .then(snapshot => {
+                    const eventsList = document.getElementById('eventsList');
+                    eventsList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const eventItem = document.createElement('div');
+                        eventItem.className = 'p-4 border-b border-gray-200';
+                        eventItem.innerHTML = `
+                            <h3 class="font-bold">${data.title}</h3>
+                            <p class="text-gray-600">${data.description}</p>
+                            <div class="text-sm text-gray-500 mt-2">
+                                ${new Date(data.start.seconds * 1000).toLocaleDateString('th-TH')} - ${new Date(data.end.seconds * 1000).toLocaleDateString('th-TH')}
+                            </div>
+                            <div class="text-sm text-gray-500">สถานที่: ${data.location}</div>
+                            <div class="text-sm text-gray-500">ประเภท: ${data.type}</div>
+                        `;
+                        eventsList.appendChild(eventItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading events:', error);
+                });
+        }
+        
+        function loadPendingRequests() {
+            // โหลดคำขอที่รอการอนุมัติ (สำหรับ admin)
+            db.collection('activities').where('approved', '==', false).get()
+                .then(activitiesSnapshot => {
+                    db.collection('borrowings').where('status', '==', 'pending').get()
+                        .then(borrowingsSnapshot => {
+                            db.collection('events').where('approved', '==', false).get()
+                                .then(eventsSnapshot => {
+                                    const pendingRequests = document.getElementById('pendingRequests');
+                                    pendingRequests.innerHTML = '';
+                                    
+                                    // Activities
+                                    activitiesSnapshot.forEach(doc => {
+                                        const data = doc.data();
+                                        const requestItem = document.createElement('div');
+                                        requestItem.className = 'p-3 border-b border-gray-200';
+                                        requestItem.innerHTML = `
+                                            <div class="font-medium">กิจกรรม: ${data.title}</div>
+                                            <div class="text-sm text-gray-600">โดย: ${data.createdBy}</div>
+                                            <div class="mt-2">
+                                                <button class="btn btn-primary approve-request mr-2" data-type="activity" data-id="${doc.id}">อนุมัติ</button>
+                                                <button class="btn btn-secondary reject-request" data-type="activity" data-id="${doc.id}">ปฏิเสธ</button>
+                                            </div>
+                                        `;
+                                        pendingRequests.appendChild(requestItem);
+                                    });
+                                    
+                                    // Borrowings
+                                    borrowingsSnapshot.forEach(doc => {
+                                        const data = doc.data();
+                                        const requestItem = document.createElement('div');
+                                        requestItem.className = 'p-3 border-b border-gray-200';
+                                        requestItem.innerHTML = `
+                                            <div class="font-medium">คำขอยืม: ${data.itemName}</div>
+                                            <div class="text-sm text-gray-600">โดย: ${data.borrowerName}</div>
+                                            <div class="mt-2">
+                                                <button class="btn btn-primary approve-request mr-2" data-type="borrowing" data-id="${doc.id}">อนุมัติ</button>
+                                                <button class="btn btn-secondary reject-request" data-type="borrowing" data-id="${doc.id}">ปฏิเสธ</button>
+                                            </div>
+                                        `;
+                                        pendingRequests.appendChild(requestItem);
+                                    });
+                                    
+                                    // Events
+                                    eventsSnapshot.forEach(doc => {
+                                        const data = doc.data();
+                                        const requestItem = document.createElement('div');
+                                        requestItem.className = 'p-3 border-b border-gray-200';
+                                        requestItem.innerHTML = `
+                                            <div class="font-medium">กิจกรรมปฏิทิน: ${data.title}</div>
+                                            <div class="text-sm text-gray-600">โดย: ${data.createdBy}</div>
+                                            <div class="mt-2">
+                                                <button class="btn btn-primary approve-request mr-2" data-type="event" data-id="${doc.id}">อนุมัติ</button>
+                                                <button class="btn btn-secondary reject-request" data-type="event" data-id="${doc.id}">ปฏิเสธ</button>
+                                            </div>
+                                        `;
+                                        pendingRequests.appendChild(requestItem);
+                                    });
+                                    
+                                    // Add event listeners for approve/reject buttons
+                                    document.querySelectorAll('.approve-request').forEach(button => {
+                                        button.addEventListener('click', function() {
+                                            const type = this.getAttribute('data-type');
+                                            const id = this.getAttribute('data-id');
+                                            approveRequest(type, id);
+                                        });
+                                    });
+                                    
+                                    document.querySelectorAll('.reject-request').forEach(button => {
+                                        button.addEventListener('click', function() {
+                                            const type = this.getAttribute('data-type');
+                                            const id = this.getAttribute('data-id');
+                                            rejectRequest(type, id);
+                                        });
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Error loading pending events:', error);
+                                });
+                        })
+                        .catch(error => {
+                            console.error('Error loading pending borrowings:', error);
+                        });
+                })
+                .catch(error => {
+                    console.error('Error loading pending activities:', error);
+                });
+        }
+        
+        function loadUsers() {
+            // โหลดรายการผู้ใช้งาน (สำหรับ admin)
+            db.collection('users').get()
+                .then(snapshot => {
+                    const userManagement = document.getElementById('userManagement');
+                    userManagement.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const userItem = document.createElement('div');
+                        userItem.className = 'p-3 border-b border-gray-200 flex justify-between items-center';
+                        
+                        let statusBadge = '';
+                        if (data.approved) {
+                            statusBadge = '<span class="badge badge-approved">อนุมัติแล้ว</span>';
+                        } else {
+                            statusBadge = '<span class="badge badge-pending">รออนุมัติ</span>';
+                        }
+                        
+                        userItem.innerHTML = `
+                            <div>
+                                <div class="font-medium">${data.name}</div>
+                                <div class="text-sm text-gray-600">${data.email}</div>
+                                <div class="text-sm text-gray-600">บทบาท: ${data.role}</div>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                                ${!data.approved ? '<button class="btn btn-primary mt-2 approve-user" data-id="' + doc.id + '">อนุมัติ</button>' : ''}
+                                <button class="btn btn-secondary mt-2 reset-password" data-id="' + doc.id + '" data-email="${data.email}">รีเซ็ตรหัสผ่าน</button>
+                                <button class="btn bg-red-500 text-white mt-2 delete-user" data-id="' + doc.id + '">ลบ</button>
+                            </div>
+                        `;
+                        userManagement.appendChild(userItem);
+                    });
+                    
+                    // Add event listeners for user management buttons
+                    document.querySelectorAll('.approve-user').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            approveUser(id);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.reset-password').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            const email = this.getAttribute('data-email');
+                            resetPassword(email);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.delete-user').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            deleteUser(id);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                });
+        }
+        
+        // Save Functions
+        function saveActivity() {
+            const title = document.getElementById('activityTitle').value;
+            const description = document.getElementById('activityDescription').value;
+            const date = document.getElementById('activityDate').value;
+            const time = document.getElementById('activityTime').value;
+            
+            if (!title || !description || !date || !time) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            db.collection('activities').add({
+                title: title,
+                description: description,
+                date: date,
+                time: time,
+                createdBy: currentUser.email,
+                approved: isAdmin, // ถ้าเป็น admin อนุมัติทันที
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert('บันทึกกิจกรรมสำเร็จ' + (isAdmin ? '' : ' รอการอนุมัติจากผู้ดูแลระบบ'));
+                hideModal(addActivityModal);
+                loadActivities();
+            })
+            .catch(error => {
+                alert('บันทึกกิจกรรมล้มเหลว: ' + error.message);
+            });
+        }
+        
+        function saveLink() {
+            const name = document.getElementById('linkName').value;
+            const url = document.getElementById('linkUrl').value;
+            
+            if (!name || !url) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            db.collection('links').add({
+                name: name,
+                url: url,
+                createdBy: currentUser.uid
+            })
+            .then(() => {
+                alert('บันทึกลิงก์สำเร็จ');
+                hideModal(addLinkModal);
+                loadLinks();
+            })
+            .catch(error => {
+                alert('บันทึกลิงก์ล้มเหลว: ' + error.message);
+            });
+        }
+        
+        function saveDocument() {
+            const name = document.getElementById('documentName').value;
+            const url = document.getElementById('documentUrl').value;
+            
+            if (!name || !url) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            db.collection('documents').add({
+                name: name,
+                url: url,
+                createdBy: currentUser.uid
+            })
+            .then(() => {
+                alert('บันทึกเอกสารสำเร็จ');
+                hideModal(addDocumentModal);
+                loadDocuments();
+            })
+            .catch(error => {
+                alert('บันทึกเอกสารล้มเหลว: ' + error.message);
+            });
+        }
+        
+        function saveItem() {
+            const name = document.getElementById('itemName').value;
+            const quantity = document.getElementById('itemQuantity').value;
+            
+            if (!name || !quantity) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            db.collection('items').add({
+                name: name,
+                quantity: parseInt(quantity),
+                available: parseInt(quantity),
+                createdBy: currentUser.uid
+            })
+            .then(() => {
+                alert('บันทึกอุปกรณ์สำเร็จ');
+                hideModal(addItemModal);
+            })
+            .catch(error => {
+                alert('บันทึกอุปกรณ์ล้มเหลว: ' + error.message);
+            });
+        }
+        
+        function saveBorrowRequest() {
+            const itemId = document.getElementById('borrowItem').value;
+            const quantity = document.getElementById('borrowQuantity').value;
+            const borrowDate = document.getElementById('borrowDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+            
+            if (!itemId || !quantity || !borrowDate || !returnDate) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            // ตรวจสอบว่ามีอุปกรณ์พอหรือไม่
+            db.collection('items').doc(itemId).get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const item = doc.data();
+                        if (item.available < parseInt(quantity)) {
+                            alert('อุปกรณ์ไม่เพียงพอ');
+                            return;
+                        }
+                        
+                        // บันทึกคำขอยืม
+                        return db.collection('borrowings').add({
+                            itemId: itemId,
+                            itemName: item.name,
+                            quantity: parseInt(quantity),
+                            borrowerId: currentUser.uid,
+                            borrowerName: currentUser.email,
+                            borrowDate: new Date(borrowDate),
+                            returnDate: new Date(returnDate),
+                            status: 'pending',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        alert('ไม่พบอุปกรณ์');
+                    }
+                })
+                .then(() => {
+                    alert('ส่งคำขอยืมสำเร็จ รอการอนุมัติจากผู้ดูแลระบบ');
+                    hideModal(requestBorrowModal);
+                    loadBorrowData();
+                })
+                .catch(error => {
+                    alert('ส่งคำขอยืมล้มเหลว: ' + error.message);
+                });
+        }
+        
+        function saveEvent() {
+            const title = document.getElementById('eventTitle').value;
+            const startDate = document.getElementById('eventStartDate').value;
+            const endDate = document.getElementById('eventEndDate').value;
+            const location = document.getElementById('eventLocation').value;
+            const type = document.getElementById('eventType').value;
+            const description = document.getElementById('eventDescription').value;
+            
+            if (!title || !startDate || !endDate || !location || !type || !description) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            db.collection('events').add({
+                title: title,
+                start: new Date(startDate),
+                end: new Date(endDate),
+                location: location,
+                type: type,
+                description: description,
+                createdBy: currentUser.email,
+                approved: isAdmin, // ถ้าเป็น admin อนุมัติทันที
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert('บันทึกกิจกรรมปฏิทินสำเร็จ' + (isAdmin ? '' : ' รอการอนุมัติจากผู้ดูแลระบบ'));
+                hideModal(addEventModal);
+                loadEvents();
+            })
+            .catch(error => {
+                alert('บันทึกกิจกรรมปฏิทินล้มเหลว: ' + error.message);
+            });
+        }
+        
+        // Admin Functions
+        function approveRequest(type, id) {
+            if (type === 'activity') {
+                db.collection('activities').doc(id).update({
+                    approved: true
+                })
+                .then(() => {
+                    alert('อนุมัติกิจกรรมสำเร็จ');
+                    loadPendingRequests();
+                    loadActivities();
+                })
+                .catch(error => {
+                    alert('อนุมัติกิจกรรมล้มเหลว: ' + error.message);
+                });
+            } else if (type === 'borrowing') {
+                db.collection('borrowings').doc(id).update({
+                    status: 'approved'
+                })
+                .then(() => {
+                    // ลดจำนวนอุปกรณ์ที่ว่าง
+                    return db.collection('borrowings').doc(id).get();
+                })
+                .then(doc => {
+                    const data = doc.data();
+                    return db.collection('items').doc(data.itemId).get();
+                })
+                .then(itemDoc => {
+                    const item = itemDoc.data();
+                    return db.collection('items').doc(itemDoc.id).update({
+                        available: item.available - 1
+                    });
+                })
+                .then(() => {
+                    alert('อนุมัติการยืมสำเร็จ');
+                    loadPendingRequests();
+                    loadBorrowData();
+                    loadDashboardData();
+                })
+                .catch(error => {
+                    alert('อนุมัติการยืมล้มเหลว: ' + error.message);
+                });
+            } else if (type === 'event') {
+                db.collection('events').doc(id).update({
+                    approved: true
+                })
+                .then(() => {
+                    alert('อนุมัติกิจกรรมปฏิทินสำเร็จ');
+                    loadPendingRequests();
+                    loadEvents();
+                })
+                .catch(error => {
+                    alert('อนุมัติกิจกรรมปฏิทินล้มเหลว: ' + error.message);
+                });
+            }
+        }
+        
+        function rejectRequest(type, id) {
+            if (type === 'activity') {
+                db.collection('activities').doc(id).delete()
+                .then(() => {
+                    alert('ปฏิเสธกิจกรรมสำเร็จ');
+                    loadPendingRequests();
+                })
+                .catch(error => {
+                    alert('ปฏิเสธกิจกรรมล้มเหลว: ' + error.message);
+                });
+            } else if (type === 'borrowing') {
+                db.collection('borrowings').doc(id).update({
+                    status: 'rejected'
+                })
+                .then(() => {
+                    alert('ปฏิเสธการยืมสำเร็จ');
+                    loadPendingRequests();
+                    loadBorrowData();
+                })
+                .catch(error => {
+                    alert('ปฏิเสธการยืมล้มเหลว: ' + error.message);
+                });
+            } else if (type === 'event') {
+                db.collection('events').doc(id).delete()
+                .then(() => {
+                    alert('ปฏิเสธกิจกรรมปฏิทินสำเร็จ');
+                    loadPendingRequests();
+                })
+                .catch(error => {
+                    alert('ปฏิเสธกิจกรรมปฏิทินล้มเหลว: ' + error.message);
+                });
+            }
+        }
+        
+        function approveUser(id) {
+            db.collection('users').doc(id).update({
+                approved: true
+            })
+            .then(() => {
+                alert('อนุมัติผู้ใช้งานสำเร็จ');
+                loadUsers();
+            })
+            .catch(error => {
+                alert('อนุมัติผู้ใช้งานล้มเหลว: ' + error.message);
+            });
+        }
+        
+        function resetPassword(email) {
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    alert('ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว');
+                })
+                .catch(error => {
+                    alert('รีเซ็ตรหัสผ่านล้มเหลว: ' + error.message);
+                });
+        }
+        
+        function deleteUser(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบผู้ใช้นี้?')) {
+                db.collection('users').doc(id).delete()
+                .then(() => {
+                    alert('ลบผู้ใช้งานสำเร็จ');
+                    loadUsers();
+                })
+                .catch(error => {
+                    alert('ลบผู้ใช้งานล้มเหลว: ' + error.message);
+                });
+            }
+        }
+        
+        function returnItem(id) {
+            db.collection('borrowings').doc(id).update({
+                status: 'returned'
+            })
+            .then(() => {
+                // เพิ่มจำนวนอุปกรณ์ที่ว่าง
+                return db.collection('borrowings').doc(id).get();
+            })
+            .then(doc => {
+                const data = doc.data();
+                return db.collection('items').doc(data.itemId).get();
+            })
+            .then(itemDoc => {
+                const item = itemDoc.data();
+                return db.collection('items').doc(itemDoc.id).update({
+                    available: item.available + 1
+                });
+            })
+            .then(() => {
+                alert('คืนอุปกรณ์สำเร็จ');
+                loadBorrowData();
+                loadDashboardData();
+            })
+            .catch(error => {
+                alert('คืนอุปกรณ์ล้มเหลว: ' + error.message);
+            });
+        }
+        
+        // โหลดรายการอุปกรณ์สำหรับ dropdown
+        function loadItemsForDropdown() {
+            db.collection('items').where('available', '>', 0).get()
+                .then(snapshot => {
+                    const borrowItemSelect = document.getElementById('borrowItem');
+                    borrowItemSelect.innerHTML = '<option value="">เลือกอุปกรณ์</option>';
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${data.name} (เหลือ ${data.available} ชิ้น)`;
+                        borrowItemSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading items for dropdown:', error);
+                });
+        }
+        
+        // เรียกใช้เมื่อเปิด modal คำขอยืม
+        requestBorrowBtn.addEventListener('click', loadItemsForDropdown);
+    </script>
+</body>
+</html>
