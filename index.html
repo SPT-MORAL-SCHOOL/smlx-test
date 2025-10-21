@@ -336,8 +336,11 @@
 </div>
 
 
+// ------------------------------------------------------------------
+// 3. JavaScript/Firebase Logic (แก้ไขแล้ว)
+// ------------------------------------------------------------------
 <script>
-    // 📌 1. Firebase Configuration
+    // 📌 1. Firebase Configuration (ใช้ตัวเดิม)
     const firebaseConfig = {
         apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw",
         authDomain: "clip-61b0b.firebaseapp.com",
@@ -357,11 +360,10 @@
     const ADMIN_EMAIL = 'sptmorral@spt.ac.th';
 
     // ------------------------------------------------------------------
-    // A. Auth View Logic
+    // A. Element Selectors
     // ------------------------------------------------------------------
     const authView = document.getElementById('auth-view');
     const dashboardContainer = document.getElementById('dashboard-container');
-
     const loginCard = document.getElementById('login-card');
     const registerCard = document.getElementById('register-card');
     const showRegisterBtn = document.getElementById('show-register');
@@ -369,7 +371,60 @@
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
 
-    // สลับหน้า Login/Register UI
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const navLinks = document.querySelectorAll('nav a[data-page]');
+    const logoutBtn = document.getElementById('logout-btn');
+    const adminMenu = document.getElementById('admin-menu');
+    const pageTitle = document.getElementById('page-title');
+
+    // ------------------------------------------------------------------
+    // B. Utility Functions
+    // ------------------------------------------------------------------
+
+    // ฟังก์ชันแสดง/ซ่อนหน้า
+    function displayView(view) {
+        if (view === 'auth') {
+            authView.style.display = 'flex';
+            dashboardContainer.style.display = 'none';
+        } else if (view === 'dashboard') {
+            authView.style.display = 'none';
+            dashboardContainer.style.display = 'block';
+        }
+    }
+    
+    // **Navigation Function (เหมือนเดิม)**
+    function loadPage(pageName) {
+        const titleMap = {
+            'home': 'หน้าหลัก', 'activities': 'กิจกรรม', 'calendar': 'ปฏิทิน', 
+            'equipment': 'ยืม-คืนอุปกรณ์', 'links': 'ลิงก์', 'documents': 'เอกสาร', 
+            'admin': 'จัดการระบบ (ผู้ดูแล)'
+        };
+        pageTitle.textContent = titleMap[pageName] || 'แดชบอร์ด';
+
+        document.querySelectorAll('.page-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        const targetSection = document.getElementById(`${pageName}-page`);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        } else {
+             document.getElementById('page-content').innerHTML = `
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-xl shadow-lg" role="alert">
+                    <p class="font-bold">หน้า ${pageTitle.textContent}</p>
+                    <p>ส่วนนี้พร้อมสำหรับการพัฒนาต่อยอดเพื่อเชื่อมต่อกับ Firestore ในการเพิ่ม/ลบ/แก้ไขข้อมูล</p>
+                </div>
+            `;
+        }
+    }
+
+
+    // ------------------------------------------------------------------
+    // C. Event Listeners & Core Logic
+    // ------------------------------------------------------------------
+
+    // 1. สลับหน้า Login/Register UI
     if (showRegisterBtn) {
         showRegisterBtn.addEventListener('click', () => {
             loginCard.classList.add('hidden');
@@ -381,13 +436,14 @@
         });
     }
 
-    // 1. **Login Handler**
+    // 2. Login Handler (เหมือนเดิม)
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-
+            
+            // ใช้ try-catch เพื่อให้แน่ใจว่าการ Login ทำงานและตรวจสอบสิทธิ์
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
@@ -396,12 +452,12 @@
                 const userData = userDoc.data();
 
                 if (!userData || !userData.isApproved) {
-                    await auth.signOut();
+                    await auth.signOut(); // บังคับ Logout ถ้าไม่อนุมัติ
                     alert('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแล');
                     return;
                 }
 
-                // หากสำเร็จ onAuthStateChanged จะจัดการเปลี่ยนหน้า
+                // ถ้าสำเร็จ onAuthStateChanged จะจัดการเปลี่ยนหน้า
 
             } catch (error) {
                 alert('ลงชื่อเข้าใช้งานล้มเหลว: ' + error.message);
@@ -409,7 +465,7 @@
         });
     }
 
-    // 2. **Register Handler (ต้องรออนุมัติ)**
+    // 3. Register Handler (เหมือนเดิม)
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -435,7 +491,7 @@
 
                 alert('ลงทะเบียนสำเร็จ! โปรดรอผู้ดูแลอนุมัติบัญชีของคุณ');
                 await auth.signOut();
-                document.getElementById('reg-email').value = ''; // Clear form
+                document.getElementById('reg-email').value = '';
                 document.getElementById('reg-password').value = '';
                 showLoginBtn.click();
 
@@ -445,47 +501,7 @@
         });
     }
 
-    // ------------------------------------------------------------------
-    // B. Dashboard Logic
-    // ------------------------------------------------------------------
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const sidebar = document.getElementById('sidebar');
-    const navLinks = document.querySelectorAll('nav a[data-page]');
-    const logoutBtn = document.getElementById('logout-btn');
-    const adminMenu = document.getElementById('admin-menu');
-    const pageTitle = document.getElementById('page-title');
-
-    // **Navigation Function**
-    function loadPage(pageName) {
-        // อัปเดต Title
-        const titleMap = {
-            'home': 'หน้าหลัก', 'activities': 'กิจกรรม', 'calendar': 'ปฏิทิน', 
-            'equipment': 'ยืม-คืนอุปกรณ์', 'links': 'ลิงก์', 'documents': 'เอกสาร', 
-            'admin': 'จัดการระบบ (ผู้ดูแล)'
-        };
-        pageTitle.textContent = titleMap[pageName] || 'แดชบอร์ด';
-
-        // ซ่อนทุกหน้า
-        document.querySelectorAll('.page-section').forEach(section => {
-            section.classList.add('hidden');
-        });
-
-        // แสดงหน้าที่ต้องการ
-        const targetSection = document.getElementById(`${pageName}-page`);
-        if (targetSection) {
-            targetSection.classList.remove('hidden');
-        } else {
-             // Fallback/Content for non-implemented pages
-             document.getElementById('page-content').innerHTML = `
-                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-xl shadow-lg" role="alert">
-                    <p class="font-bold">หน้า ${pageTitle.textContent}</p>
-                    <p>ส่วนนี้พร้อมสำหรับการพัฒนาต่อยอดเพื่อเชื่อมต่อกับ Firestore ในการเพิ่ม/ลบ/แก้ไขข้อมูล</p>
-                </div>
-            `;
-        }
-    }
-
-    // Event Listeners for Navigation
+    // 4. Dashboard Listeners (เหมือนเดิม)
     if (navLinks.length > 0) {
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -495,45 +511,34 @@
                 navLinks.forEach(l => l.classList.remove('is-active'));
                 link.classList.add('is-active');
 
-                sidebar.classList.add('-translate-x-full'); // Hide sidebar on mobile
-
+                sidebar.classList.add('-translate-x-full');
                 loadPage(page);
             });
         });
     }
-
-    // Mobile Menu Toggle
     if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', () => {
             sidebar.classList.toggle('-translate-x-full');
         });
     }
-
-    // Log Out
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            try {
-                await auth.signOut();
-                // onAuthStateChanged จะจัดการเปลี่ยนหน้า
-            } catch (error) {
-                console.error('Logout failed:', error);
-            }
+            await auth.signOut();
+            alert('คุณออกจากระบบแล้ว');
         });
     }
-    
-    // Change Password
     if (document.getElementById('change-password-btn')) {
         document.getElementById('change-password-btn').addEventListener('click', async (e) => {
             e.preventDefault();
-            const email = auth.currentUser ? auth.currentUser.email : null;
-            if (!email) {
+            const user = auth.currentUser;
+            if (!user) {
                 alert('ไม่พบข้อมูลผู้ใช้งาน');
                 return;
             }
-            if (confirm(`ต้องการรีเซ็ตรหัสผ่านสำหรับอีเมล ${email} หรือไม่? ระบบจะส่งลิงก์ไปที่อีเมลของคุณ`)) {
+            if (confirm(`ต้องการรีเซ็ตรหัสผ่านสำหรับอีเมล ${user.email} หรือไม่? ระบบจะส่งลิงก์ไปที่อีเมลของคุณ`)) {
                 try {
-                    await auth.sendPasswordResetEmail(email);
+                    await auth.sendPasswordResetEmail(user.email);
                     alert('ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว โปรดตรวจสอบอีเมล');
                 } catch (error) {
                     alert('การส่งอีเมลล้มเหลว: ' + error.message);
@@ -542,43 +547,49 @@
         });
     }
 
-
-    // **Auth State Observer**
+    // 5. **Core Auth State Observer (Fixed)**
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            authView.style.display = 'none';
-            dashboardContainer.style.display = 'block';
+            // กรณีมีผู้ใช้งานล็อกอินอยู่
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
 
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            const userData = userDoc.data();
+                if (userData && userData.isApproved) {
+                    // **ผู้ใช้ที่อนุมัติแล้ว**: แสดง Dashboard
+                    const displayName = `${userData.prefix}${userData.name} ${userData.lastname}`;
+                    document.getElementById('user-display-name').textContent = displayName;
 
-            if (userData && userData.isApproved) {
-                const displayName = `${userData.prefix}${userData.name} ${userData.lastname}`;
-                document.getElementById('user-display-name').textContent = displayName;
+                    if (userData.role === 'admin') {
+                        adminMenu.classList.remove('hidden');
+                    } else {
+                        adminMenu.classList.add('hidden');
+                    }
 
-                // แสดง/ซ่อนเมนูผู้ดูแล
-                if (userData.role === 'admin') {
-                    adminMenu.classList.remove('hidden');
+                    displayView('dashboard');
+                    loadPage('home');
+
                 } else {
-                    adminMenu.classList.add('hidden');
+                    // **ผู้ใช้ที่ยังไม่อนุมัติ**: บังคับ Logout และแสดงหน้า Auth
+                    await auth.signOut();
+                    displayView('auth');
                 }
-
-                // โหลดหน้าแรก
-                loadPage('home'); 
-
-            } else {
-                // ไม่อนุมัติ: บังคับให้ออกจากระบบ
+            } catch (error) {
+                console.error("Error fetching user data on state change:", error);
                 await auth.signOut();
-                alert('บัญชีของคุณยังไม่ได้รับการอนุมัติ กรุณารอการตรวจสอบ');
-                // จะกลับไปหน้า Login อัตโนมัติในรอบถัดไป
+                displayView('auth');
             }
         } else {
-            // ไม่ได้ลงชื่อเข้าใช้
-            authView.style.display = 'flex';
-            dashboardContainer.style.display = 'none';
+            // กรณีไม่มีผู้ใช้งานล็อกอิน: แสดงหน้า Login เป็นค่าเริ่มต้น
+            displayView('auth');
+            // รีเซ็ต active state ของเมนู
+            navLinks.forEach(l => l.classList.remove('is-active'));
+            const homeLink = document.querySelector('a[data-page="home"]');
+            if(homeLink) homeLink.classList.add('is-active');
         }
     });
 
 </script>
+
 </body>
 </html>
