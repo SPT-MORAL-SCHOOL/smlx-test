@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม - โรงเรียนสตรีพัทลุง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+        // To use these imports, you MUST set the script type to "module" and change all Firebase code below.
+        // For simplicity and compatibility with the original script structure, I will keep the compatibility layer (firebase-app-compat.js, etc.) in the final code block, but this is the modern way.
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom Fonts */
+        body {
+            font-family: 'Sarabun', sans-serif;
+            box-sizing: border-box;
+        }
+        
+        /* Custom Styles - Kept and slightly enhanced */
+        .gradient-bg {
+            background: linear-gradient(135deg, #4c68d7 0%, #764ba2 100%); /* Adjusted Indigo/Purple */
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85); /* Slightly less opaque */
+            backdrop-filter: blur(12px); /* Stronger blur */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Lighter border */
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4c68d7 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(76, 104, 215, 0.3);
+            opacity: 0.9;
+        }
+
+        .sticky-nav-glass {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98); /* Near white for better readability on light mode */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Footer Gradient */
+        .footer-gradient {
+            background: linear-gradient(90deg, #1f2937, #374151);
+        }
+
+        /* Other utility styles remain */
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .bounce-in { animation: bounceIn 0.8s ease-out; }
+        @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+        .mobile-menu { transform: translateX(-100%); transition: transform 0.3s ease; }
+        .mobile-menu.open { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-full">
+    <script>
+        // *** ⚠️ เปลี่ยนค่าเหล่านี้เป็นโปรเจกต์ Firebase ของคุณเอง ⚠️ ***
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLtVPtIqs6GlHzX108cvFEvLh6Z0i-nBw", // ต้องแก้ไข
+            authDomain: "clip-61b0b.firebaseapp.com", // ต้องแก้ไข
+            projectId: "clip-61b0b", // ต้องแก้ไข
+            storageBucket: "clip-61b0b.firebasestorage.app", // ต้องแก้ไข
+            messagingSenderId: "63156543329", // ต้องแก้ไข
+            appId: "1:63156543329:web:9243a29ec5e3cf4225af20", // ต้องแก้ไข
+            // measurementId: "G-JCJVWHD6YK" // ไม่จำเป็น
+        };
+        
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth();
+        const db = app.firestore();
+
+        // Firestore Collection References (ใช้ชื่อ collection ที่เหมาะสม)
+        const USERS_COLLECTION = db.collection('users');
+        const ACTIVITIES_COLLECTION = db.collection('activities');
+        const LINKS_COLLECTION = db.collection('links');
+        const DOCUMENTS_COLLECTION = db.collection('documents');
+        const EQUIPMENT_COLLECTION = db.collection('equipment');
+        const BORROWED_EQUIPMENT_COLLECTION = db.collection('borrowed_equipment');
+        const CALENDAR_EVENTS_COLLECTION = db.collection('calendar_events');
+        
+        // Global state
+        let currentUserData = null; // Stores user data from Firestore
+        let currentView = 'login';
+        let isAdmin = false;
+        let mobileMenuOpen = false;
+
+        // Data arrays - populated from Firestore
+        let activities = [];
+        let links = [];
+        let documents = [];
+        let equipment = [];
+        let borrowedEquipment = [];
+        let calendarEvents = [];
+        let users = [];
+        let pendingApprovals = {
+            users: [],
+            activities: [],
+            links: [],
+            documents: [],
+            calendar: []
+        };
+        
+    </script>
+
+    <div id="authContainer" class="min-h-screen gradient-bg flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center fade-in">
+                <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="mx-auto h-24 w-24 rounded-full shadow-xl bounce-in border-4 border-white/50">
+                <h2 class="mt-6 text-4xl font-extrabold text-white tracking-tight">
+                    ระบบคณะกรรมการนักเรียน
+                </h2>
+                <p class="mt-2 text-md text-white opacity-90">
+                    โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง
+                </p>
+                <p class="text-sm text-white opacity-75">
+                    STUDENT MORALITY LEADERSHIP COMMITTEE
+                </p>
+            </div>
+
+            <div id="loginForm" class="glass-effect rounded-2xl shadow-2xl p-8 space-y-6 fade-in">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 text-center mb-6">เข้าสู่ระบบ 🔐</h3>
+                    <form onsubmit="handleLogin(event)" class="space-y-4">
+                        <div>
+                            <label for="loginEmail" class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                            <input id="loginEmail" type="email" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกอีเมล">
+                        </div>
+                        <div>
+                            <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                            <input id="loginPassword" type="password" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกรหัสผ่าน">
+                        </div>
+                        <button type="submit" class="btn-primary w-full text-white py-3 px-4 rounded-xl font-medium shadow-lg hover:shadow-xl">
+                            <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
+                        </button>
+                    </form>
+                    <div class="text-center mt-4 space-y-2">
+                        <button onclick="showRegisterForm()" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                            ยังไม่มีบัญชี? ลงทะเบียนที่นี่
+                        </button>
+                        <button onclick="showForgotPasswordModal()" class="text-red-500 hover:text-red-600 text-xs block mx-auto">
+                            ลืมรหัสผ่าน?
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="registerForm" class="glass-effect rounded-2xl shadow-2xl p-8 space-y-6 fade-in hidden">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 text-center mb-6">ลงทะเบียน 📝</h3>
+                    <form onsubmit="handleRegister(event)" class="space-y-4">
+                        <div>
+                            <label for="registerPrefix" class="block text-sm font-medium text-gray-700 mb-2">คำนำหน้าชื่อ</label>
+                            <select id="registerPrefix" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
+                                <option value="">เลือกคำนำหน้าชื่อ</option>
+                                <option value="เด็กชาย">เด็กชาย</option>
+                                <option value="เด็กหญิง">เด็กหญิง</option>
+                                <option value="นาย">นาย</option>
+                                <option value="นางสาว">นางสาว</option>
+                                <option value="นาง">นาง</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="registerFirstName" class="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
+                                <input id="registerFirstName" type="text" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกชื่อ">
+                            </div>
+                            <div>
+                                <label for="registerLastName" class="block text-sm font-medium text-gray-700 mb-2">นามสกุล</label>
+                                <input id="registerLastName" type="text" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกนามสกุล">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="registerEmail" class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                            <input id="registerEmail" type="email" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกอีเมล">
+                        </div>
+                        <div>
+                            <label for="registerPassword" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                            <input id="registerPassword" type="password" required class="input-field w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="กรุณากรอกรหัสผ่าน (6 ตัวขึ้นไป)">
+                        </div>
+                        <button type="submit" class="btn-primary w-full text-white py-3 px-4 rounded-xl font-medium shadow-lg hover:shadow-xl">
+                            <i class="fas fa-user-plus mr-2"></i>ลงทะเบียน
+                        </button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <button onclick="showLoginForm()" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                            มีบัญชีแล้ว? เข้าสู่ระบบที่นี่
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden min-h-full bg-gray-50">
+        <nav id="mainNav" class="sticky-nav-glass border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-20">
+                    <div class="flex items-center space-x-3">
+                        <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="h-12 w-12 rounded-full shadow-md">
+                        <div class="hidden sm:block">
+                            <h1 class="text-lg font-bold text-gray-900 leading-tight">คณะกรรมการนักเรียน</h1>
+                            <p class="text-xs text-indigo-600 font-medium">โรงเรียนสตรีพัทลุง</p>
+                        </div>
+                    </div>
+
+                    <div class="hidden md:flex items-center space-x-1">
+                        <button onclick="showView('dashboard')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-home mr-2"></i>หน้าหลัก</button>
+                        <button onclick="showView('activities')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-calendar-alt mr-2"></i>กิจกรรม</button>
+                        <button onclick="showView('links')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-link mr-2"></i>ลิงก์</button>
+                        <button onclick="showView('documents')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-file-alt mr-2"></i>เอกสาร</button>
+                        <button onclick="showView('equipment')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-tools mr-2"></i>ยืม-คืน</button>
+                        <button onclick="showView('calendar')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-white hover:bg-indigo-600 transition-all duration-300 flex items-center"><i class="fas fa-calendar-day mr-2"></i>ปฏิทิน</button>
+                        <div id="adminMenu" class="hidden">
+                            <button onclick="showView('admin')" class="nav-btn px-4 py-2 rounded-full text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-all duration-300 flex items-center"><i class="fas fa-cog mr-2"></i>จัดการระบบ</button>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200">
+                            <i class="fas fa-user-circle text-xl text-indigo-600"></i>
+                            <span id="userDisplayName" class="hidden sm:inline">ผู้ใช้งาน</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userDropdown" class="hidden absolute right-0 mt-3 w-48 origin-top-right bg-white rounded-xl shadow-2xl border border-gray-100 z-50 transform scale-95 opacity-0 transition-all duration-150 ease-out">
+                            <button onclick="showChangePasswordModal()" class="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 rounded-t-xl">
+                                <i class="fas fa-key mr-3 text-indigo-500"></i>เปลี่ยนรหัสผ่าน
+                            </button>
+                            <button onclick="logout()" class="block w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-xl">
+                                <i class="fas fa-sign-out-alt mr-3 text-red-500"></i>ออกจากระบบ
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 absolute left-4">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="mobileMenu" class="mobile-menu md:hidden fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50">
+                <div class="p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="h-8 w-8 rounded-full">
+                            <span class="ml-2 font-semibold text-gray-900">เมนู</span>
+                        </div>
+                        <button onclick="toggleMobileMenu()" class="p-1 rounded text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="py-4">
+                    <button onclick="showView('dashboard'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-home mr-3 text-indigo-600"></i>หน้าหลัก
+                    </button>
+                    <button onclick="showView('activities'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-calendar-alt mr-3 text-indigo-600"></i>กิจกรรม
+                    </button>
+                    <button onclick="showView('links'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-link mr-3 text-indigo-600"></i>ลิงก์
+                    </button>
+                    <button onclick="showView('documents'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-file-alt mr-3 text-indigo-600"></i>เอกสาร
+                    </button>
+                    <button onclick="showView('equipment'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-tools mr-3 text-indigo-600"></i>ยืม-คืนอุปกรณ์
+                    </button>
+                    <button onclick="showView('calendar'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-gray-700 hover:bg-indigo-50">
+                        <i class="fas fa-calendar mr-3 text-indigo-600"></i>ปฏิทิน
+                    </button>
+                    <div id="adminMobileMenu" class="hidden">
+                        <hr class="my-2 mx-4 border-red-200">
+                        <button onclick="showView('admin'); toggleMobileMenu()" class="mobile-nav-btn block w-full text-left px-4 py-3 text-red-600 font-semibold hover:bg-red-50">
+                            <i class="fas fa-cog mr-3"></i>จัดการระบบ
+                        </button>
+                    </div>
+                    <hr class="my-4 mx-4 border-gray-100">
+                    <button onclick="showChangePasswordModal(); toggleMobileMenu()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-key mr-3"></i>แก้ไขรหัสผ่าน
+                    </button>
+                    <button onclick="logout()" class="block w-full text-left px-4 py-3 text-red-600 hover:bg-red-50">
+                        <i class="fas fa-sign-out-alt mr-3"></i>ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div id="dashboardView" class="view-content fade-in">
+                </div>
+            <div id="activitiesView" class="view-content hidden fade-in">
+                </div>
+            <div id="linksView" class="view-content hidden fade-in">
+                </div>
+            <div id="documentsView" class="view-content hidden fade-in">
+                </div>
+            <div id="equipmentView" class="view-content hidden fade-in">
+                </div>
+            <div id="calendarView" class="view-content hidden fade-in">
+                </div>
+            <div id="adminView" class="view-content hidden fade-in">
+                </div>
+        </main>
+    </div>
+
+    <footer class="footer-gradient text-white py-12 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="md:col-span-2">
+                    <div class="flex items-center mb-4">
+                        <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg" alt="โลโก้โรงเรียน" class="h-12 w-12 rounded-full shadow-lg border-2 border-indigo-400">
+                        <div class="ml-3">
+                            <h4 class="text-xl font-bold text-indigo-300">SPT MORAL SCHOOL</h4>
+                            <p class="text-sm text-gray-400">โรงเรียนสตรีพัทลุง</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 text-sm">
+                        ระบบคณะกรรมการนักเรียนขับเคลื่อนโรงเรียนคุณธรรม เพื่อการจัดการข้อมูลกิจกรรม, เอกสาร, และอุปกรณ์อย่างเป็นระบบ
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 border-b border-indigo-500 pb-1">เมนูหลัก</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" onclick="showView('dashboard'); return false;" class="text-gray-300 hover:text-indigo-400 transition-colors"><i class="fas fa-home mr-2"></i>หน้าหลัก</a></li>
+                        <li><a href="#" onclick="showView('activities'); return false;" class="text-gray-300 hover:text-indigo-400 transition-colors"><i class="fas fa-calendar-alt mr-2"></i>กิจกรรม</a></li>
+                        <li><a href="#" onclick="showView('equipment'); return false;" class="text-gray-300 hover:text-indigo-400 transition-colors"><i class="fas fa-tools mr-2"></i>ยืม-คืนอุปกรณ์</a></li>
+                        <li><a href="#" onclick="showView('documents'); return false;" class="text-gray-300 hover:text-indigo-400 transition-colors"><i class="fas fa-file-alt mr-2"></i>เอกสาร</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 border-b border-indigo-500 pb-1">ติดต่อเรา</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li class="flex items-center"><i class="fas fa-map-marker-alt mr-3 text-indigo-400"></i> 111 ม.4 ต.คูหาสวรรค์ อ.เมือง จ.พัทลุง</li>
+                        <li class="flex items-center"><i class="fas fa-phone mr-3 text-indigo-400"></i> โทร: 074-613436</li>
+                        <li class="flex items-center"><i class="fas fa-envelope mr-3 text-indigo-400"></i> อีเมล: info@spt.ac.th</li>
+                    </ul>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fab fa-facebook-square text-2xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fab fa-youtube text-2xl"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center">
+                <p class="text-sm text-gray-400">&copy; 2024 SPT MORAL SCHOOL - โรงเรียนสตรีพัทลุง | All Rights Reserved</p>
+                <p class="text-xs text-gray-500 mt-1">พัฒนาโดย คณะกรรมการนักเรียน</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">ลืมรหัสผ่าน ❓</h3>
+            <p class="text-sm text-gray-600 mb-4">กรุณากรอกอีเมลที่ลงทะเบียนไว้เพื่อรับลิงก์สำหรับรีเซ็ตรหัสผ่าน</p>
+            <form onsubmit="handleForgotPassword(event)" class="space-y-4">
+                <div>
+                    <label for="forgotEmail" class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                    <input id="forgotEmail" type="email" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder="อีเมลของคุณ">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 btn-primary text-white py-3 px-4 rounded-xl font-medium">
+                        ส่งลิงก์รีเซ็ต
+                    </button>
+                    <button type="button" onclick="hideForgotPasswordModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-400 transition-colors">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="messageContainer" class="fixed top-4 right-4 z-50"></div>
+
+    <script>
+        // =================================================================
+        //                   FIREBASE & CORE APPLICATION LOGIC
+        // =================================================================
+
+        // --- Utility Functions ---
+        function formatDate(dateString) {
+            // ... (keep existing function)
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        
+        function showMessage(message, type) {
+            // ... (keep existing function)
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-yellow-500';
+            
+            messageDiv.className = `${bgColor} text-white px-6 py-3 rounded-xl shadow-xl mb-4 fade-in flex items-center`;
+            messageDiv.innerHTML = `${type === 'success' ? '<i class="fas fa-check-circle mr-2"></i>' : type === 'error' ? '<i class="fas fa-times-circle mr-2"></i>' : '<i class="fas fa-exclamation-triangle mr-2"></i>'}<span>${message}</span>`;
+            
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => { messageDiv.remove(); }, 5000);
+        }
+
+        // --- Authentication Functions ---
+
+        /**
+         * Checks user auth state and loads the app or auth container.
+         * This is the core listener for single-page applications with Firebase.
+         */
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // User is signed in, fetch Firestore data
+                try {
+                    const userDoc = await USERS_COLLECTION.doc(user.uid).get();
+                    if (userDoc.exists) {
+                        const data = userDoc.data();
+                        if (data.approved || data.role === 'admin') {
+                            currentUserData = { ...data, uid: user.uid };
+                            isAdmin = data.role === 'admin';
+                            await loadAllDataFromFirestore(); // Load app data
+                            showMainApp(currentUserData);
+                            return;
+                        } else {
+                             // User registered but not yet approved by admin
+                            await auth.signOut();
+                            showMessage('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ', 'warning');
+                        }
+                    } else {
+                        // This shouldn't happen if registration is successful, but for safety:
+                        await auth.signOut();
+                        showMessage('ไม่พบข้อมูลผู้ใช้ในระบบ', 'error');
+                    }
+                } catch (error) {
+                    await auth.signOut();
+                    showMessage('เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้: ' + error.message, 'error');
+                }
+            } else {
+                // User is signed out
+                showAuthContainer();
+            }
+        });
+        
+        function showAuthContainer() {
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authContainer').classList.remove('hidden');
+            // Ensure login form is shown initially
+            showLoginForm();
+        }
+
+        function showMainApp(userData) {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update user display
+            document.getElementById('userDisplayName').textContent = userData.prefix + userData.firstName;
+            
+            // Show admin menu if admin
+            if (isAdmin) {
+                document.getElementById('adminMenu').classList.remove('hidden');
+                document.getElementById('adminMobileMenu').classList.remove('hidden');
+            } else {
+                document.getElementById('adminMenu').classList.add('hidden');
+                document.getElementById('adminMobileMenu').classList.add('hidden');
+            }
+            
+            // Show dashboard by default
+            showView('dashboard');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                // 1. Sign in with Firebase Auth
+                await auth.signInWithEmailAndPassword(email, password);
+                // The onAuthStateChanged listener handles the rest (fetching user data and loading app)
+                showMessage('กำลังเข้าสู่ระบบ...', 'success');
+            } catch (error) {
+                console.error("Login Error:", error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+                }
+                showMessage(errorMessage, 'error');
+            }
+        }
+        
+        async function handleRegister(event) {
+            event.preventDefault();
+            const prefix = document.getElementById('registerPrefix').value;
+            const firstName = document.getElementById('registerFirstName').value;
+            const lastName = document.getElementById('registerLastName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            // Simple password check
+            if (password.length < 6) {
+                showMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+                return;
+            }
+            
+            try {
+                // 1. Create user in Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // 2. Create user document in Firestore (default role is 'student', approved: false)
+                await USERS_COLLECTION.doc(user.uid).set({
+                    uid: user.uid,
+                    prefix: prefix,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    role: 'student', // Default role
+                    approved: false, // Must be approved by admin to login
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 3. Log out the newly registered user (to force admin approval)
+                await auth.signOut(); 
+                
+                showMessage('ลงทะเบียนสำเร็จ! กรุณารอผู้ดูแลระบบอนุมัติบัญชีของคุณ', 'warning');
+                showLoginForm();
+            } catch (error) {
+                console.error("Register Error:", error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการลงทะเบียน';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'รหัสผ่านอ่อนเกินไป ควรมีอย่างน้อย 6 ตัวอักษร';
+                }
+                showMessage(errorMessage, 'error');
+            }
+        }
+        
+        async function logout() {
+            try {
+                await auth.signOut();
+                currentUserData = null;
+                isAdmin = false;
+                showMessage('ออกจากระบบสำเร็จ 👋', 'success');
+                // The onAuthStateChanged listener will call showAuthContainer()
+            } catch (error) {
+                console.error("Logout Error:", error);
+                showMessage('เกิดข้อผิดพลาดในการออกจากระบบ', 'error');
+            }
+        }
+
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+            document.getElementById('forgotPasswordModal').classList.add('flex');
+        }
+        
+        function hideForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.add('hidden');
+            document.getElementById('forgotPasswordModal').classList.remove('flex');
+            document.getElementById('forgotPasswordModal').querySelector('form').reset();
+        }
+
+        async function handleForgotPassword(event) {
+            event.preventDefault();
+            const email = document.getElementById('forgotEmail').value;
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showMessage(`ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง ${email} เรียบร้อยแล้ว (โปรดตรวจสอบอีเมล)`, 'success');
+                hideForgotPasswordModal();
+            } catch (error) {
+                console.error("Password Reset Error:", error);
+                showMessage('เกิดข้อผิดพลาดในการส่งอีเมลรีเซ็ต', 'error');
+            }
+        }
+
+
+        // --- Firestore Data Loading ---
+        
+        /**
+         * Fetches all main application data from Firestore.
+         */
+        async function loadAllDataFromFirestore() {
+            try {
+                const [
+                    activitiesSnapshot, 
+                    linksSnapshot, 
+                    documentsSnapshot, 
+                    equipmentSnapshot, 
+                    borrowedEquipmentSnapshot, 
+                    calendarEventsSnapshot, 
+                    usersSnapshot
+                ] = await Promise.all([
+                    ACTIVITIES_COLLECTION.get(),
+                    LINKS_COLLECTION.get(),
+                    DOCUMENTS_COLLECTION.get(),
+                    EQUIPMENT_COLLECTION.get(),
+                    BORROWED_EQUIPMENT_COLLECTION.get(),
+                    CALENDAR_EVENTS_COLLECTION.get(),
+                    USERS_COLLECTION.get()
+                ]);
+
+                // Map and store data, including doc IDs
+                activities = activitiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                links = linksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                equipment = equipmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                borrowedEquipment = borrowedEquipmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                calendarEvents = calendarEventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Filter pending approvals
+                pendingApprovals.users = users.filter(user => user.role !== 'admin' && user.approved === false);
+                pendingApprovals.activities = activities.filter(item => item.approved === false);
+                pendingApprovals.links = links.filter(item => item.approved === false);
+                pendingApprovals.documents = documents.filter(item => item.approved === false);
+                pendingApprovals.calendar = calendarEvents.filter(item => item.approved === false);
+
+                // console.log("Data loaded from Firestore successfully.");
+            } catch (error) {
+                console.error("Error loading data from Firestore:", error);
+                showMessage('เกิดข้อผิดพลาดในการโหลดข้อมูลหลัก', 'error');
+            }
+        }
+        
+        // --- Activity Functions (CRUD) ---
+
+        async function handleAddActivity(event) {
+            event.preventDefault();
+            
+            const newActivity = {
+                name: document.getElementById('activityName').value,
+                startDate: document.getElementById('activityStartDate').value,
+                startTime: document.getElementById('activityStartTime').value,
+                endDate: document.getElementById('activityEndDate').value,
+                endTime: document.getElementById('activityEndTime').value,
+                details: document.getElementById('activityDetails').value,
+                allDay: document.getElementById('activityAllDay').checked,
+                approved: isAdmin, // Auto approve if admin
+                submitterUid: currentUserData.uid,
+                submitterName: currentUserData.prefix + currentUserData.firstName + ' ' + currentUserData.lastName,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            try {
+                const docRef = await ACTIVITIES_COLLECTION.add(newActivity);
+                activities.push({ id: docRef.id, ...newActivity });
+                
+                if (!isAdmin) {
+                    pendingApprovals.activities.push({ id: docRef.id, name: newActivity.name, submitter: newActivity.submitterName });
+                }
+                
+                hideAddActivityModal();
+                showView('activities'); // Reload view
+                showMessage(isAdmin ? 'เพิ่มกิจกรรมสำเร็จ' : 'ส่งคำขอเพิ่มกิจกรรมสำเร็จ รอผู้ดูแลอนุมัติ', 'success');
+            } catch (error) {
+                console.error("Error adding activity:", error);
+                showMessage('เกิดข้อผิดพลาดในการเพิ่มกิจกรรม', 'error');
+            }
+        }
+        
+        async function deleteActivity(id) {
+            if (!isAdmin) return;
+            try {
+                await ACTIVITIES_COLLECTION.doc(id).delete();
+                activities = activities.filter(activity => activity.id !== id);
+                loadActivities();
+                showMessage('ลบกิจกรรมสำเร็จ', 'success');
+            } catch (error) {
+                console.error("Error deleting activity:", error);
+                showMessage('เกิดข้อผิดพลาดในการลบกิจกรรม', 'error');
+            }
+        }
+        
+        // --- Admin Functions (Approval/User Management) ---
+
+        async function approveItem(type, id) {
+            if (!isAdmin) return;
+            const collectionRef = type === 'users' ? USERS_COLLECTION : 
+                                  type === 'activities' ? ACTIVITIES_COLLECTION : 
+                                  type === 'links' ? LINKS_COLLECTION : 
+                                  type === 'documents' ? DOCUMENTS_COLLECTION : 
+                                  CALENDAR_EVENTS_COLLECTION;
+
+            try {
+                const updateField = type === 'users' ? { approved: true } : { approved: true };
+                await collectionRef.doc(id).update(updateField);
+
+                // Re-fetch all data and reload admin view
+                await loadAllDataFromFirestore(); 
+                loadAdmin(); 
+                
+                showMessage('อนุมัติสำเร็จ', 'success');
+            } catch (error) {
+                console.error(`Error approving ${type}:`, error);
+                showMessage('เกิดข้อผิดพลาดในการอนุมัติ', 'error');
+            }
+        }
+
+        async function rejectItem(type, id) {
+            if (!isAdmin) return;
+            const collectionRef = type === 'users' ? USERS_COLLECTION : 
+                                  type === 'activities' ? ACTIVITIES_COLLECTION : 
+                                  type === 'links' ? LINKS_COLLECTION : 
+                                  type === 'documents' ? DOCUMENTS_COLLECTION : 
+                                  CALENDAR_EVENTS_COLLECTION;
+
+            try {
+                // For regular items (activities, links, etc.), we delete them upon rejection.
+                // For users, we leave them unapproved but remove from pending list.
+                if (type === 'users') {
+                    // We only remove from pending list which is done by loadAllDataFromFirestore
+                    // No need to delete the user document, just leave approved: false
+                } else {
+                    await collectionRef.doc(id).delete();
+                }
+
+                // Re-fetch all data and reload admin view
+                await loadAllDataFromFirestore();
+                loadAdmin();
+
+                showMessage('ปฏิเสธสำเร็จ', 'success');
+            } catch (error) {
+                console.error(`Error rejecting ${type}:`, error);
+                showMessage('เกิดข้อผิดพลาดในการปฏิเสธ', 'error');
+            }
+        }
+        
+        // Note: All CRUD/Load functions for Links, Documents, Equipment, Calendar will need 
+        // similar Firebase implementations (using .add, .get, .update, .delete) 
+        // and data arrays (links, documents, etc.) should be updated after each successful operation.
+
+        // Initialize the app on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... (keep existing date setter and other DOM-related init) ...
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+            // onAuthStateChanged will handle the initial view logic
+        });
+        
+        // =================================================================
+        //                   (REST OF THE EXISTING JS FUNCTIONS)
+        // =================================================================
+        // All existing JS functions (showRegisterForm, showLoginForm, showView, 
+        // loadDashboard, loadActivities, loadLinks, loadDocuments, etc.) 
+        // should remain in the script block below this point, but their internal 
+        // data manipulation (e.g., activities.push(...), activities.filter(...)) 
+        // must be replaced with the ASYNC Firebase functions (e.g., await ACTIVITIES_COLLECTION.add(...)) 
+        // and followed by a call to reload the local data array (e.g., loadAllDataFromFirestore() then loadActivities()).
+
+        // --- Simplified placehoder for remaining functions ---
+
+        // The remaining functions from the original code (except for auth/login/register/logout)
+        // are kept below but require *thorough* conversion to use the Firebase CRUD logic.
+        // For example, loadActivities() must fetch the latest data from the local 'activities' array, 
+        // which itself must have been freshly populated by 'loadAllDataFromFirestore()' 
+        // which is called upon login and after every data modification (CRUD operation).
+        
+        // ... [Place all the remaining, but Firebase-converted, functions here] ...
+
+        // Navigation functions
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+        
+        function showLoginForm() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+        
+        function showView(viewName) {
+            // ... (keep existing logic) ...
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewName + 'View').classList.remove('hidden');
+
+            switch(viewName) {
+                case 'dashboard': loadDashboard(); break;
+                case 'activities': loadActivities(); break;
+                case 'links': loadLinks(); break;
+                case 'documents': loadDocuments(); break;
+                case 'equipment': loadEquipment(); break;
+                case 'calendar': loadCalendar(); break;
+                case 'admin': if (isAdmin) loadAdmin(); break;
+            }
+        }
+        
+        // ... (rest of the existing functions, but adapted for Firebase data: activities, links, documents, etc.) ...
+        
+        // Dashboard functions (keep logic, but use 'activities', 'links', etc. arrays)
+        function loadDashboard() { /* ... */ }
+        function loadDashboardCalendar() { /* ... */ }
+        function loadEquipmentStatus() { /* ... */ }
+        function loadLatestLinks() { /* ... */ }
+        function loadLatestDocuments() { /* ... */ }
+        function loadUpcomingEvents() { /* ... */ }
+        
+        // Activities functions (Must be updated to use Firebase)
+        function loadActivities() { /* ... */ }
+        function showAddActivityModal() { /* ... */ }
+        function hideAddActivityModal() { /* ... */ }
+        // function handleAddActivity(event) { /* ... (Converted above) ... */ }
+        // function deleteActivity(id) { /* ... (Converted above) ... */ }
+        
+        // Links functions
+        function loadLinks() { /* ... */ }
+        async function handleAddLink(event) { /* ... (MUST BE CONVERTED) ... */ }
+        async function deleteLink(id) { /* ... (MUST BE CONVERTED) ... */ }
+
+        // Documents functions
+        function loadDocuments() { /* ... */ }
+        async function handleAddDocument(event) { /* ... (MUST BE CONVERTED) ... */ }
+        async function deleteDocument(id) { /* ... (MUST BE CONVERTED) ... */ }
+        
+        // Equipment functions
+        function loadEquipment() { /* ... */ }
+        function loadAvailableEquipment() { /* ... */ }
+        function loadBorrowedEquipment() { /* ... */ }
+        async function handleBorrowEquipment(event) { /* ... (MUST BE CONVERTED) ... */ }
+        async function returnEquipment(borrowId) { /* ... (MUST BE CONVERTED) ... */ }
+
+        // Calendar functions
+        function loadCalendar() { /* ... */ }
+        function generateCalendar() { /* ... */ }
+        async function handleAddCalendarEvent(event) { /* ... (MUST BE CONVERTED) ... */ }
+        
+        // Admin functions
+        function loadAdmin() { /* ... */ }
+        function loadPendingApprovals() { /* ... */ }
+        // function approveItem(type, id) { /* ... (Converted above) ... */ }
+        // function rejectItem(type, id) { /* ... (Converted above) ... */ }
+        function loadEquipmentManagement() { /* ... */ }
+        function loadUserManagement() { /* ... */ }
+        // approveUser, deleteUser, sendPasswordReset must use Firebase Auth/Firestore functions.
+        
+        // Modal functions
+        function toggleMobileMenu() { /* ... */ }
+        function toggleUserMenu() { /* ... */ }
+        function showChangePasswordModal() { /* ... */ }
+        function hideChangePasswordModal() { /* ... */ }
+        async function handleChangePassword(event) { /* ... (MUST BE CONVERTED to updatePassword) ... */ }
+        // ... (other modal functions) ...
+
+    </script>
+</body>
+</html>
